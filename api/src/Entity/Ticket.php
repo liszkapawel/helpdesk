@@ -9,6 +9,8 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: TicketRepository::class)]
 #[ORM\HasLifecycleCallbacks]
@@ -17,41 +19,55 @@ class Ticket
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['ticket:read', 'ticket:list'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['ticket:read', 'ticket:list'])]
+    #[Assert\NotBlank]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['ticket:read'])]
+    #[Assert\NotBlank]
     private ?string $description = null;
 
     #[ORM\Column(length: 20, enumType: TicketStatus::class)]
+    #[Groups(['ticket:read', 'ticket:list'])]
     private TicketStatus $status = TicketStatus::NEW;
 
     #[ORM\Column(length: 20, enumType: TicketPriority::class)]
+    #[Groups(['ticket:read', 'ticket:list'])]
     private TicketPriority $priority = TicketPriority::MEDIUM;
 
     #[ORM\Column]
+    #[Groups(['ticket:read', 'ticket:list'])]
     private \DateTimeImmutable $createdAt;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['ticket:read', 'ticket:list'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['ticket:read'])]
     private ?\DateTimeImmutable $closedAt = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'createdTickets')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['ticket:read', 'ticket:list'])]
     private ?User $createdBy = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'assignedTickets')]
+    #[Groups(['ticket:read', 'ticket:list'])]
     private ?User $assignedTo = null;
 
     #[ORM\ManyToOne(targetEntity: Category::class, inversedBy: 'tickets')]
+    #[Groups(['ticket:read', 'ticket:list'])]
     private ?Category $category = null;
 
     /** @var Collection<int, Comment> */
     #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'ticket', cascade: ['remove'])]
+    #[Groups(['ticket:read'])]
     private Collection $comments;
 
     public function __construct()
