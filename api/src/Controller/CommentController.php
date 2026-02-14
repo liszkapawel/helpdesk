@@ -79,6 +79,8 @@ class CommentController extends AbstractController
             return $this->json(['error' => 'Comment not found'], 404);
         }
 
+        $this->denyAccessUnlessGranted('COMMENT_DELETE', $comment);
+
         $em->remove($comment);
         $em->flush();
 

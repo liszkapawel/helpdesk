@@ -102,6 +102,8 @@ class TicketController extends AbstractController
         EntityManagerInterface $em,
         ValidatorInterface $validator,
     ): JsonResponse {
+        $this->denyAccessUnlessGranted('TICKET_EDIT', $ticket);
+
         $data = json_decode($request->getContent(), true);
 
         if (isset($data['title'])) {
@@ -152,6 +154,8 @@ class TicketController extends AbstractController
     #[Route('/{id}', methods: ['DELETE'])]
     public function delete(Ticket $ticket, EntityManagerInterface $em): JsonResponse
     {
+        $this->denyAccessUnlessGranted('TICKET_DELETE', $ticket);
+
         $em->remove($ticket);
         $em->flush();
 
