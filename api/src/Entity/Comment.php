@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\CommentRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
@@ -35,9 +37,15 @@ class Comment
     #[Groups(['comment:read'])]
     private ?User $author = null;
 
+    /** @var Collection<int, Attachment> */
+    #[ORM\OneToMany(targetEntity: Attachment::class, mappedBy: 'comment', cascade: ['remove'])]
+    #[Groups(['comment:read'])]
+    private Collection $attachments;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+        $this->attachments = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -81,5 +89,11 @@ class Comment
     {
         $this->author = $author;
         return $this;
+    }
+
+    /** @return Collection<int, Attachment> */
+    public function getAttachments(): Collection
+    {
+        return $this->attachments;
     }
 }

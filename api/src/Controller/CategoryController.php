@@ -27,6 +27,8 @@ class CategoryController extends AbstractController
     #[Route('', methods: ['POST'])]
     public function create(Request $request, EntityManagerInterface $em): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
         $data = json_decode($request->getContent(), true);
 
         $category = new Category();
@@ -58,6 +60,8 @@ class CategoryController extends AbstractController
     #[Route('/{id}', methods: ['PUT'])]
     public function update(Category $category, Request $request, EntityManagerInterface $em): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
         $data = json_decode($request->getContent(), true);
 
         if (isset($data['name'])) {
@@ -80,6 +84,8 @@ class CategoryController extends AbstractController
     #[Route('/{id}', methods: ['DELETE'])]
     public function delete(Category $category, EntityManagerInterface $em): JsonResponse
     {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
         $em->remove($category);
         $em->flush();
 

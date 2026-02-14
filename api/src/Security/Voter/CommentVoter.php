@@ -24,7 +24,9 @@ class CommentVoter extends Voter
             return false;
         }
 
-        if (in_array('ROLE_ADMIN', $user->getRoles())) {
+        $roles = $user->getRoles();
+
+        if (in_array('ROLE_ADMIN', $roles) || in_array('ROLE_AGENT', $roles)) {
             return true;
         }
 

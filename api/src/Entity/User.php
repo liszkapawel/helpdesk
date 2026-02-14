@@ -49,7 +49,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     /** @var list<string> */
     #[ORM\Column]
+    #[Groups(['user:read'])]
     private array $roles = [];
+
+    #[ORM\ManyToOne(targetEntity: Organization::class, inversedBy: 'users')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['user:read'])]
+    private ?Organization $organization = null;
 
     #[ORM\Column]
     private bool $isActive = true;
@@ -204,6 +210,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getComments(): Collection
     {
         return $this->comments;
+    }
+
+    public function getOrganization(): ?Organization
+    {
+        return $this->organization;
+    }
+
+    public function setOrganization(?Organization $organization): static
+    {
+        $this->organization = $organization;
+        return $this;
     }
 
     public function eraseCredentials(): void

@@ -3,9 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\Ticket;
+use App\Entity\User;
 use App\Enum\TicketPriority;
 use App\Enum\TicketStatus;
 use App\Repository\TicketRepository;
+use App\Service\AuditService;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,6 +19,12 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[Route('/api/tickets')]
 class TicketController extends AbstractController
 {
+    public function __construct(
+        private AuditService $audit,
+        private NotificationService $notifications,
+    ) {
+    }
+
     #[Route('', methods: ['GET'])]
     public function list(Request $request, TicketRepository $repo): JsonResponse
     {
@@ -23,8 +32,10 @@ class TicketController extends AbstractController
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
         $offset = ($page - 1) * $limit;
 
-        $total = $repo->count([]);
-        $tickets = $repo->findBy([], ['createdAt' => 'DESC'], $limit, $offset);
+        /** @var User $user */
+        $user = $this->getUser();
+        $total = $repo->countByUserRole($user);
+        $tickets = $repo->findByUserRole($user, $limit, $offset);
 
         return $this->json([
             'data' => $tickets,
@@ -44,10 +55,14 @@ class TicketController extends AbstractController
     ): JsonResponse {
         $data = json_decode($request->getContent(), true);
 
+        /** @var User $user */
+        $user = $this->getUser();
+
         $ticket = new Ticket();
         $ticket->setTitle($data['title'] ?? '');
         $ticket->setDescription($data['description'] ?? '');
-        $ticket->setCreatedBy($this->getUser());
+        $ticket->setCreatedBy($user);
+        $ticket->setOrganization($user->getOrganization());
 
         if (isset($data['priority'])) {
             $priority = TicketPriority::tryFrom($data['priority']);
@@ -76,11 +91,17 @@ class TicketController extends AbstractController
         $em->persist($ticket);
         $em->flush();
 
+        $this->audit->log('ticket', $ticket->getId(), 'created', [
+            'title' => $ticket->getTitle(),
+            'priority' => $ticket->getPriority()->value,
+        ], $user);
+        $em->flush();
+
         return $this->json(
             $ticket,
             201,
             [],
-            ['groups' => ['ticket:read', 'user:read', 'comment:read', 'category:read']],
+            ['groups' => ['ticket:read', 'user:read', 'comment:read', 'category:read', 'attachment:read']],
         );
     }
 
@@ -91,7 +112,7 @@ class TicketController extends AbstractController
             $ticket,
             200,
             [],
-            ['groups' => ['ticket:read', 'user:read', 'comment:read', 'category:read']],
+            ['groups' => ['ticket:read', 'user:read', 'comment:read', 'category:read', 'attachment:read']],
         );
     }
 
@@ -104,23 +125,37 @@ class TicketController extends AbstractController
     ): JsonResponse {
         $this->denyAccessUnlessGranted('TICKET_EDIT', $ticket);
 
+        /** @var User $user */
+        $user = $this->getUser();
         $data = json_decode($request->getContent(), true);
+        $changes = [];
+        $oldStatus = $ticket->getStatus()->value;
+        $oldAssignedTo = $ticket->getAssignedTo();
 
-        if (isset($data['title'])) {
+        if (isset($data['title']) && $data['title'] !== $ticket->getTitle()) {
+            $changes['title'] = ['from' => $ticket->getTitle(), 'to' => $data['title']];
             $ticket->setTitle($data['title']);
         }
-        if (isset($data['description'])) {
+        if (isset($data['description']) && $data['description'] !== $ticket->getDescription()) {
+            $changes['description'] = ['from' => '(changed)', 'to' => '(changed)'];
             $ticket->setDescription($data['description']);
         }
         if (isset($data['status'])) {
             $status = TicketStatus::tryFrom($data['status']);
-            if ($status) {
+            if ($status && $status !== $ticket->getStatus()) {
+                $changes['status'] = ['from' => $ticket->getStatus()->value, 'to' => $status->value];
                 $ticket->setStatus($status);
+                if ($status === TicketStatus::CLOSED || $status === TicketStatus::RESOLVED) {
+                    $ticket->setClosedAt(new \DateTimeImmutable());
+                } else {
+                    $ticket->setClosedAt(null);
+                }
             }
         }
         if (isset($data['priority'])) {
             $priority = TicketPriority::tryFrom($data['priority']);
-            if ($priority) {
+            if ($priority && $priority !== $ticket->getPriority()) {
+                $changes['priority'] = ['from' => $ticket->getPriority()->value, 'to' => $priority->value];
                 $ticket->setPriority($priority);
             }
         }
@@ -128,6 +163,27 @@ class TicketController extends AbstractController
             $category = $em->getRepository(\App\Entity\Category::class)->find($data['category']);
             if ($category) {
                 $ticket->setCategory($category);
+            }
+        }
+        if (array_key_exists('assignedTo', $data)) {
+            $this->denyAccessUnlessGranted('TICKET_ASSIGN', $ticket);
+            if ($data['assignedTo']) {
+                $agent = $em->getRepository(User::class)->find($data['assignedTo']);
+                if ($agent) {
+                    $changes['assignedTo'] = [
+                        'from' => $oldAssignedTo ? $oldAssignedTo->getFirstName() . ' ' . $oldAssignedTo->getLastName() : null,
+                        'to' => $agent->getFirstName() . ' ' . $agent->getLastName(),
+                    ];
+                    $ticket->setAssignedTo($agent);
+                }
+            } else {
+                if ($oldAssignedTo) {
+                    $changes['assignedTo'] = [
+                        'from' => $oldAssignedTo->getFirstName() . ' ' . $oldAssignedTo->getLastName(),
+                        'to' => null,
+                    ];
+                }
+                $ticket->setAssignedTo(null);
             }
         }
 
@@ -141,13 +197,24 @@ class TicketController extends AbstractController
             return $this->json(['errors' => $messages], 422);
         }
 
+        // Audit & notifications
+        if (!empty($changes)) {
+            $this->audit->log('ticket', $ticket->getId(), 'updated', $changes, $user);
+        }
+        if (isset($changes['status'])) {
+            $this->notifications->notifyTicketStatusChanged($ticket, $oldStatus, $user);
+        }
+        if (isset($changes['assignedTo']) && $ticket->getAssignedTo()) {
+            $this->notifications->notifyTicketAssigned($ticket, $ticket->getAssignedTo(), $user);
+        }
+
         $em->flush();
 
         return $this->json(
             $ticket,
             200,
             [],
-            ['groups' => ['ticket:read', 'user:read', 'comment:read', 'category:read']],
+            ['groups' => ['ticket:read', 'user:read', 'comment:read', 'category:read', 'attachment:read']],
         );
     }
 

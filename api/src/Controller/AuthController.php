@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Entity\Invite;
+use App\Entity\Organization;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -9,10 +11,17 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class AuthController extends AbstractController
 {
+    #[Route('/api/me', methods: ['GET'])]
+    public function me(): JsonResponse
+    {
+        return $this->json($this->getUser(), 200, [], ['groups' => ['user:read', 'organization:read']]);
+    }
+
     #[Route('/api/register', methods: ['POST'])]
     public function register(
         Request $request,
@@ -27,6 +36,32 @@ class AuthController extends AbstractController
         $user->setPlainPassword($data['password'] ?? '');
         $user->setFirstName($data['firstName'] ?? '');
         $user->setLastName($data['lastName'] ?? '');
+
+        $inviteCode = $data['inviteCode'] ?? null;
+        $organizationName = $data['organizationName'] ?? null;
+
+        if ($inviteCode) {
+            // Join existing organization via invite
+            $invite = $em->getRepository(Invite::class)->findOneBy(['code' => $inviteCode]);
+            if (!$invite || !$invite->isValid()) {
+                return $this->json(['error' => 'Invalid or expired invite code'], 400);
+            }
+            $user->setOrganization($invite->getOrganization());
+            $invite->setUsedBy($user);
+        } elseif ($organizationName) {
+            // Create new organization
+            $org = new Organization();
+            $org->setName($organizationName);
+            $slugger = new AsciiSlugger();
+            $slug = strtolower($slugger->slug($organizationName)->toString()) . '-' . substr(bin2hex(random_bytes(4)), 0, 8);
+            $org->setSlug($slug);
+            $em->persist($org);
+
+            $user->setOrganization($org);
+            $user->setRoles(['ROLE_ADMIN']);
+        } else {
+            return $this->json(['error' => 'Either inviteCode or organizationName is required'], 400);
+        }
 
         $errors = $validator->validate($user);
 
@@ -48,7 +83,7 @@ class AuthController extends AbstractController
             $user,
             201,
             [],
-            ['groups' => ['user:read']],
+            ['groups' => ['user:read', 'organization:read']],
         );
     }
 }

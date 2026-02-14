@@ -4,6 +4,9 @@ namespace App\Controller;
 
 use App\Entity\Comment;
 use App\Entity\Ticket;
+use App\Entity\User;
+use App\Service\AuditService;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,6 +17,12 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[Route('/api/tickets/{ticketId}/comments')]
 class CommentController extends AbstractController
 {
+    public function __construct(
+        private AuditService $audit,
+        private NotificationService $notifications,
+    ) {
+    }
+
     #[Route('', methods: ['GET'])]
     public function list(int $ticketId, EntityManagerInterface $em): JsonResponse
     {
@@ -44,12 +53,14 @@ class CommentController extends AbstractController
             return $this->json(['error' => 'Ticket not found'], 404);
         }
 
+        /** @var User $user */
+        $user = $this->getUser();
         $data = json_decode($request->getContent(), true);
 
         $comment = new Comment();
         $comment->setContent($data['content'] ?? '');
         $comment->setTicket($ticket);
-        $comment->setAuthor($this->getUser());
+        $comment->setAuthor($user);
 
         $errors = $validator->validate($comment);
 
@@ -62,6 +73,13 @@ class CommentController extends AbstractController
         }
 
         $em->persist($comment);
+        $em->flush();
+
+        $this->audit->log('ticket', $ticketId, 'comment_added', [
+            'commentId' => $comment->getId(),
+            'author' => $user->getFirstName() . ' ' . $user->getLastName(),
+        ], $user);
+        $this->notifications->notifyTicketCommented($ticket, $user);
         $em->flush();
 
         return $this->json(
@@ -80,6 +98,13 @@ class CommentController extends AbstractController
         }
 
         $this->denyAccessUnlessGranted('COMMENT_DELETE', $comment);
+
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $this->audit->log('ticket', $ticketId, 'comment_deleted', [
+            'commentId' => $comment->getId(),
+        ], $user);
 
         $em->remove($comment);
         $em->flush();

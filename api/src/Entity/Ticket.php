@@ -52,6 +52,10 @@ class Ticket
     #[Groups(['ticket:read'])]
     private ?\DateTimeImmutable $closedAt = null;
 
+    #[ORM\ManyToOne(targetEntity: Organization::class, inversedBy: 'tickets')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Organization $organization = null;
+
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'createdTickets')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['ticket:read', 'ticket:list'])]
@@ -70,10 +74,16 @@ class Ticket
     #[Groups(['ticket:read'])]
     private Collection $comments;
 
+    /** @var Collection<int, Attachment> */
+    #[ORM\OneToMany(targetEntity: Attachment::class, mappedBy: 'ticket', cascade: ['remove'])]
+    #[Groups(['ticket:read'])]
+    private Collection $attachments;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->comments = new ArrayCollection();
+        $this->attachments = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -152,6 +162,17 @@ class Ticket
         return $this;
     }
 
+    public function getOrganization(): ?Organization
+    {
+        return $this->organization;
+    }
+
+    public function setOrganization(?Organization $organization): static
+    {
+        $this->organization = $organization;
+        return $this;
+    }
+
     public function getCreatedBy(): ?User
     {
         return $this->createdBy;
@@ -189,5 +210,11 @@ class Ticket
     public function getComments(): Collection
     {
         return $this->comments;
+    }
+
+    /** @return Collection<int, Attachment> */
+    public function getAttachments(): Collection
+    {
+        return $this->attachments;
     }
 }
