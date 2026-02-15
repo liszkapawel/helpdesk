@@ -14,6 +14,8 @@ const route = useRoute()
 const toast = useToast()
 const auth = useAuthStore()
 
+const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'helpdesk.local'
+
 const email = ref('')
 const password = ref('')
 const firstName = ref('')
@@ -26,8 +28,64 @@ const modes = [
 ]
 const mode = ref('create')
 const organizationName = ref('')
+const organizationSlug = ref('')
+const slugAvailable = ref<boolean | null>(null)
+const slugChecking = ref(false)
 const inviteCode = ref((route.query.invite as string) || '')
 const inviteOrgName = ref('')
+
+let slugTimeout: ReturnType<typeof setTimeout> | null = null
+
+watch(organizationSlug, (val) => {
+  // Auto-sanitize: remove invalid chars
+  const sanitized = val.toLowerCase().replace(/[^a-z0-9\-]/g, '')
+  if (sanitized !== val) {
+    organizationSlug.value = sanitized
+    return
+  }
+
+  slugAvailable.value = null
+  if (slugTimeout) clearTimeout(slugTimeout)
+
+  if (val.length < 3) return
+
+  slugChecking.value = true
+  slugTimeout = setTimeout(async () => {
+    try {
+      const { data } = await api.get(`/public/check-slug/${val}`)
+      slugAvailable.value = data.available
+    } catch {
+      slugAvailable.value = null
+    } finally {
+      slugChecking.value = false
+    }
+  }, 400)
+})
+
+// Auto-generate slug from org name if slug is empty
+watch(organizationName, (name) => {
+  if (!organizationSlug.value || organizationSlug.value === slugFromName(organizationName.value)) {
+    // Only auto-fill if user hasn't customized it
+  }
+  const generated = slugFromName(name)
+  if (!organizationSlug.value || organizationSlug.value === previousAutoSlug) {
+    organizationSlug.value = generated
+  }
+  previousAutoSlug = generated
+})
+
+let previousAutoSlug = ''
+
+function slugFromName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ł/g, 'l')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 48)
+}
 
 watch(inviteCode, async (code) => {
   if (code.length >= 10) {
@@ -60,6 +118,7 @@ async function submit() {
       lastName.value,
       mode.value === 'join' ? inviteCode.value : undefined,
       mode.value === 'create' ? organizationName.value : undefined,
+      mode.value === 'create' ? organizationSlug.value : undefined,
     )
     toast.add({ severity: 'success', summary: 'Sukces', detail: 'Konto utworzone. Zaloguj się.', life: 3000 })
     router.push('/login')
@@ -81,9 +140,9 @@ async function submit() {
       <div class="max-w-md">
         <div class="flex items-center gap-2 mb-8">
           <i class="pi pi-shield text-primary text-2xl"></i>
-          <span class="font-bold text-xl tracking-tight">Helpdesk</span>
+          <span class="font-bold text-xl tracking-tight">Ticketerr</span>
         </div>
-        <h2 class="text-3xl font-bold tracking-tight mb-4">Dołącz do Helpdesk</h2>
+        <h2 class="text-3xl font-bold tracking-tight mb-4">Dołącz do Ticketerr</h2>
         <p class="text-surface-500 leading-relaxed">
           Stwórz organizację lub dołącz do istniejącej za pomocą kodu zaproszenia.
         </p>
@@ -95,7 +154,7 @@ async function submit() {
       <div class="w-full max-w-sm">
         <div class="flex items-center gap-2 mb-8 lg:hidden">
           <i class="pi pi-shield text-primary text-xl"></i>
-          <span class="font-bold text-lg">Helpdesk</span>
+          <span class="font-bold text-lg">Ticketerr</span>
         </div>
 
         <h1 class="text-2xl font-bold mb-1">Zarejestruj się</h1>
@@ -125,10 +184,40 @@ async function submit() {
             <Password id="password" v-model="password" placeholder="Min. 6 znaków" toggle-mask required fluid />
           </div>
 
-          <div v-if="mode === 'create'" class="flex flex-col gap-1.5">
-            <label for="orgName" class="text-sm font-medium">Nazwa organizacji</label>
-            <InputText id="orgName" v-model="organizationName" placeholder="Nazwa firmy lub zespołu" required />
-          </div>
+          <template v-if="mode === 'create'">
+            <div class="flex flex-col gap-1.5">
+              <label for="orgName" class="text-sm font-medium">Nazwa organizacji</label>
+              <InputText id="orgName" v-model="organizationName" placeholder="Nazwa firmy lub zespołu" required />
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <label for="orgSlug" class="text-sm font-medium">Nazwa skrótowa (subdomena)</label>
+              <InputText
+                id="orgSlug"
+                v-model="organizationSlug"
+                placeholder="moja-firma"
+                required
+                :class="{
+                  'p-invalid': organizationSlug.length >= 3 && slugAvailable === false,
+                }"
+              />
+              <div class="text-xs text-surface-400">
+                Twój portal: <strong>{{ organizationSlug || '...' }}.{{ baseDomain }}</strong>
+              </div>
+              <small v-if="slugChecking" class="text-surface-400">
+                <i class="pi pi-spinner pi-spin text-xs"></i> Sprawdzanie...
+              </small>
+              <small v-else-if="slugAvailable === true && organizationSlug.length >= 3" class="text-green-600 font-medium">
+                <i class="pi pi-check text-xs"></i> Dostępna
+              </small>
+              <small v-else-if="slugAvailable === false && organizationSlug.length >= 3" class="text-red-500 font-medium">
+                <i class="pi pi-times text-xs"></i> Już zajęta
+              </small>
+              <small v-else-if="organizationSlug.length > 0 && organizationSlug.length < 3" class="text-surface-400">
+                Min. 3 znaki
+              </small>
+            </div>
+          </template>
 
           <div v-if="mode === 'join'" class="flex flex-col gap-1.5">
             <label for="inviteCode" class="text-sm font-medium">Kod zaproszenia</label>
@@ -136,7 +225,13 @@ async function submit() {
             <small v-if="inviteOrgName" class="text-green-600 font-medium">Dołączasz do: {{ inviteOrgName }}</small>
           </div>
 
-          <Button type="submit" label="Zarejestruj się" :loading="loading" class="mt-2" />
+          <Button
+            type="submit"
+            label="Zarejestruj się"
+            :loading="loading"
+            :disabled="mode === 'create' && (slugAvailable === false || organizationSlug.length < 3)"
+            class="mt-2"
+          />
           <p class="text-center text-sm text-surface-500">
             Masz już konto?
             <router-link to="/login" class="text-primary font-medium hover:underline">Zaloguj się</router-link>

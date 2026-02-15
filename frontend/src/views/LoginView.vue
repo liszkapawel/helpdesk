@@ -35,7 +35,7 @@ async function submit() {
       <div class="max-w-md">
         <div class="flex items-center gap-2 mb-8">
           <i class="pi pi-shield text-primary text-2xl"></i>
-          <span class="font-bold text-xl tracking-tight">Helpdesk</span>
+          <span class="font-bold text-xl tracking-tight">Ticketerr</span>
         </div>
         <h2 class="text-3xl font-bold tracking-tight mb-4">Zarządzaj zgłoszeniami w jednym miejscu</h2>
         <p class="text-surface-500 leading-relaxed">
@@ -49,7 +49,7 @@ async function submit() {
       <div class="w-full max-w-sm">
         <div class="flex items-center gap-2 mb-8 lg:hidden">
           <i class="pi pi-shield text-primary text-xl"></i>
-          <span class="font-bold text-lg">Helpdesk</span>
+          <span class="font-bold text-lg">Ticketerr</span>
         </div>
 
         <h1 class="text-2xl font-bold mb-1">Zaloguj się</h1>

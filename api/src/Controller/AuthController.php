@@ -73,6 +73,7 @@ class AuthController extends AbstractController
                     new OA\Property(property: 'lastName', type: 'string', example: 'Kowalski'),
                     new OA\Property(property: 'inviteCode', type: 'string', nullable: true),
                     new OA\Property(property: 'organizationName', type: 'string', nullable: true, example: 'Moja Firma'),
+                    new OA\Property(property: 'organizationSlug', type: 'string', nullable: true, example: 'moja-firma', description: 'Nazwa skrótowa (subdomena)'),
                 ]
             )
         ),
@@ -98,6 +99,7 @@ class AuthController extends AbstractController
 
         $inviteCode = $data['inviteCode'] ?? null;
         $organizationName = $data['organizationName'] ?? null;
+        $organizationSlug = $data['organizationSlug'] ?? null;
 
         if ($inviteCode) {
             // Join existing organization via invite
@@ -108,11 +110,27 @@ class AuthController extends AbstractController
             $user->setOrganization($invite->getOrganization());
             $invite->setUsedBy($user);
         } elseif ($organizationName) {
-            // Create new organization
+            // Validate slug
+            if ($organizationSlug) {
+                $slug = strtolower(trim($organizationSlug));
+                if (!preg_match('/^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$/', $slug) || strlen($slug) < 3 || strlen($slug) > 48) {
+                    return $this->json(['error' => 'Nazwa skrótowa musi mieć 3-48 znaków i zawierać tylko małe litery, cyfry i myślniki'], 422);
+                }
+                $existing = $em->getRepository(Organization::class)->findOneBy(['slug' => $slug]);
+                if ($existing) {
+                    return $this->json(['error' => 'Ta nazwa skrótowa jest już zajęta'], 422);
+                }
+            } else {
+                $slugger = new AsciiSlugger();
+                $slug = strtolower($slugger->slug($organizationName)->toString());
+                $existing = $em->getRepository(Organization::class)->findOneBy(['slug' => $slug]);
+                if ($existing) {
+                    $slug .= '-' . substr(bin2hex(random_bytes(4)), 0, 8);
+                }
+            }
+
             $org = new Organization();
             $org->setName($organizationName);
-            $slugger = new AsciiSlugger();
-            $slug = strtolower($slugger->slug($organizationName)->toString()) . '-' . substr(bin2hex(random_bytes(4)), 0, 8);
             $org->setSlug($slug);
             $em->persist($org);
 

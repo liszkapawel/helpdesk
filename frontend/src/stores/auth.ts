@@ -44,8 +44,8 @@ export const useAuthStore = defineStore('auth', () => {
     await fetchUser()
   }
 
-  async function register(email: string, password: string, firstName: string, lastName: string, inviteCode?: string, organizationName?: string) {
-    await api.post('/register', { email, password, firstName, lastName, inviteCode, organizationName })
+  async function register(email: string, password: string, firstName: string, lastName: string, inviteCode?: string, organizationName?: string, organizationSlug?: string) {
+    await api.post('/register', { email, password, firstName, lastName, inviteCode, organizationName, organizationSlug })
   }
 
   function logout() {

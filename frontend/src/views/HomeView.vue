@@ -11,7 +11,7 @@ const auth = useAuthStore()
     <nav class="flex items-center justify-between px-8 py-4 border-b border-surface-200">
       <div class="flex items-center gap-2">
         <i class="pi pi-shield text-primary text-xl"></i>
-        <span class="font-bold text-lg tracking-tight">Helpdesk</span>
+        <span class="font-bold text-lg tracking-tight">Ticketerr</span>
       </div>
       <div class="flex items-center gap-3">
         <template v-if="auth.isAuthenticated">
@@ -41,7 +41,7 @@ const auth = useAuthStore()
         <span class="text-primary">sprawnie i przejrzyście</span>
       </h1>
       <p class="text-lg text-muted-color max-w-2xl mb-10 leading-relaxed">
-        Twórz tickety, przypisuj je do zespołu, śledź postępy — wszystko w jednym miejscu. Helpdesk, który pomaga utrzymać porządek.
+        Twórz tickety, przypisuj je do zespołu, śledź postępy — wszystko w jednym miejscu. Ticketerr, który pomaga utrzymać porządek.
       </p>
       <div class="flex gap-4">
         <template v-if="auth.isAuthenticated">
@@ -64,7 +64,7 @@ const auth = useAuthStore()
     <section class="flex justify-center px-6 py-20 bg-surface-50 border-t border-surface-200">
       <div style="width: 100%; max-width: 64rem;">
         <div class="text-center mb-14">
-          <h2 class="text-3xl font-bold tracking-tight mb-3">Co oferuje Helpdesk?</h2>
+          <h2 class="text-3xl font-bold tracking-tight mb-3">Co oferuje Ticketerr?</h2>
           <p class="text-muted-color text-lg">Wszystkie narzędzia potrzebne do sprawnej obsługi zgłoszeń</p>
         </div>
 
@@ -104,7 +104,7 @@ const auth = useAuthStore()
 
     <!-- Footer -->
     <footer class="px-6 py-8 text-center text-muted-color text-sm border-t border-surface-200">
-      Helpdesk &copy; {{ new Date().getFullYear() }}
+      Ticketerr &copy; {{ new Date().getFullYear() }}
     </footer>
   </div>
 </template>

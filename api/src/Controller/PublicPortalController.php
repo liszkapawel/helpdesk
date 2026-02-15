@@ -174,6 +174,26 @@ class PublicPortalController extends AbstractController
         ]);
     }
 
+    #[Route('/check-slug/{slug}', methods: ['GET'])]
+    #[OA\Get(
+        summary: 'Sprawdź dostępność slug',
+        description: 'Publiczny endpoint — bez autoryzacji',
+        parameters: [
+            new OA\Parameter(name: 'slug', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Dostępność slug'),
+        ]
+    )]
+    public function checkSlug(string $slug, OrganizationRepository $repo): JsonResponse
+    {
+        $slug = strtolower(trim($slug));
+        $valid = preg_match('/^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$/', $slug) && strlen($slug) >= 3 && strlen($slug) <= 48;
+        $available = $valid && !$repo->findOneBy(['slug' => $slug]);
+
+        return $this->json(['available' => $available]);
+    }
+
     #[Route('/org/{slug}/categories', methods: ['GET'])]
     #[OA\Get(
         summary: 'Kategorie organizacji',

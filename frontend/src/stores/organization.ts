@@ -14,16 +14,22 @@ export interface OrgInfo {
 export const useOrganizationStore = defineStore('organization', () => {
   const org = ref<OrgInfo | null>(null)
   const loading = ref(false)
+  const notFound = ref(false)
 
   async function fetchOrg(slug: string) {
     loading.value = true
+    notFound.value = false
     try {
       const { data } = await api.get(`/public/org/${slug}`)
       org.value = data
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        notFound.value = true
+      }
     } finally {
       loading.value = false
     }
   }
 
-  return { org, loading, fetchOrg }
+  return { org, loading, notFound, fetchOrg }
 })

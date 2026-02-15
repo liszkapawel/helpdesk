@@ -44,7 +44,7 @@ function logout() {
       <!-- Logo -->
       <div class="flex items-center gap-3 px-4 h-16 border-b border-surface-200">
         <i class="pi pi-shield text-primary text-xl"></i>
-        <span v-if="sidebarOpen" class="font-bold text-lg tracking-tight">Helpdesk</span>
+        <span v-if="sidebarOpen" class="font-bold text-lg tracking-tight">Ticketerr</span>
       </div>
 
       <!-- Nav -->

@@ -30,10 +30,19 @@ class TicketController extends AbstractController
     #[Route('', methods: ['GET'])]
     #[OA\Get(
         summary: 'Lista ticketów',
-        description: 'Zwraca paginowaną listę ticketów. Admini/agenci widzą tickety organizacji, użytkownicy tylko swoje',
+        description: 'Zwraca paginowaną listę ticketów z opcjonalnym filtrowaniem i sortowaniem',
         parameters: [
             new OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer', default: 1)),
             new OA\Parameter(name: 'limit', in: 'query', schema: new OA\Schema(type: 'integer', default: 20, maximum: 100)),
+            new OA\Parameter(name: 'search', in: 'query', schema: new OA\Schema(type: 'string'), description: 'Szukaj w tytule, opisie, nazwie i emailu zgłaszającego'),
+            new OA\Parameter(name: 'status', in: 'query', schema: new OA\Schema(type: 'string', enum: ['new', 'open', 'in_progress', 'resolved', 'closed'])),
+            new OA\Parameter(name: 'priority', in: 'query', schema: new OA\Schema(type: 'string', enum: ['low', 'medium', 'high', 'critical'])),
+            new OA\Parameter(name: 'category', in: 'query', schema: new OA\Schema(type: 'integer'), description: 'ID kategorii'),
+            new OA\Parameter(name: 'assignedTo', in: 'query', schema: new OA\Schema(type: 'string'), description: 'ID agenta lub "unassigned"'),
+            new OA\Parameter(name: 'dateFrom', in: 'query', schema: new OA\Schema(type: 'string', format: 'date')),
+            new OA\Parameter(name: 'dateTo', in: 'query', schema: new OA\Schema(type: 'string', format: 'date')),
+            new OA\Parameter(name: 'sort', in: 'query', schema: new OA\Schema(type: 'string', enum: ['createdAt', 'title', 'status', 'priority'])),
+            new OA\Parameter(name: 'order', in: 'query', schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'], default: 'desc')),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Lista ticketów z metadanymi paginacji'),
@@ -45,10 +54,23 @@ class TicketController extends AbstractController
         $limit = min(100, max(1, (int) $request->query->get('limit', 20)));
         $offset = ($page - 1) * $limit;
 
+        $filters = array_filter([
+            'search' => $request->query->get('search'),
+            'status' => $request->query->get('status'),
+            'priority' => $request->query->get('priority'),
+            'category' => $request->query->get('category'),
+            'assignedTo' => $request->query->get('assignedTo'),
+            'dateFrom' => $request->query->get('dateFrom'),
+            'dateTo' => $request->query->get('dateTo'),
+        ]);
+
+        $sortField = $request->query->get('sort');
+        $sortOrder = $request->query->get('order');
+
         /** @var User $user */
         $user = $this->getUser();
-        $total = $repo->countByUserRole($user);
-        $tickets = $repo->findByUserRole($user, $limit, $offset);
+        $total = $repo->countByUserRole($user, $filters);
+        $tickets = $repo->findByUserRole($user, $limit, $offset, $filters, $sortField, $sortOrder);
 
         return $this->json([
             'data' => $tickets,

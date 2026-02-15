@@ -56,7 +56,7 @@ function logout() {
         >
           {{ orgStore.org?.name?.[0] || 'H' }}
         </div>
-        <span v-if="sidebarOpen" class="font-bold text-lg tracking-tight truncate">{{ orgStore.org?.name || 'Helpdesk' }}</span>
+        <span v-if="sidebarOpen" class="font-bold text-lg tracking-tight truncate">{{ orgStore.org?.name || 'Ticketerr' }}</span>
       </div>
 
       <!-- Nav -->

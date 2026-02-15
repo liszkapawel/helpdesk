@@ -6,6 +6,7 @@ use App\Entity\Organization;
 use App\Entity\Ticket;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -18,7 +19,7 @@ class TicketRepository extends ServiceEntityRepository
         parent::__construct($registry, Ticket::class);
     }
 
-    private function applyRoleFilter($qb, User $user): void
+    private function applyRoleFilter(QueryBuilder $qb, User $user): void
     {
         $qb->andWhere('t.organization = :org')->setParameter('org', $user->getOrganization());
 
@@ -27,24 +28,64 @@ class TicketRepository extends ServiceEntityRepository
         }
     }
 
-    public function findByUserRole(User $user, int $limit, int $offset): array
+    private function applyFilters(QueryBuilder $qb, array $filters): void
+    {
+        if (!empty($filters['status'])) {
+            $qb->andWhere('t.status = :status')->setParameter('status', $filters['status']);
+        }
+        if (!empty($filters['priority'])) {
+            $qb->andWhere('t.priority = :priority')->setParameter('priority', $filters['priority']);
+        }
+        if (!empty($filters['category'])) {
+            $qb->andWhere('t.category = :category')->setParameter('category', $filters['category']);
+        }
+        if (!empty($filters['assignedTo'])) {
+            if ($filters['assignedTo'] === 'unassigned') {
+                $qb->andWhere('t.assignedTo IS NULL');
+            } else {
+                $qb->andWhere('t.assignedTo = :assignedTo')->setParameter('assignedTo', $filters['assignedTo']);
+            }
+        }
+        if (!empty($filters['search'])) {
+            $qb->andWhere('(t.title LIKE :search OR t.description LIKE :search OR t.submitterName LIKE :search OR t.submitterEmail LIKE :search)')
+                ->setParameter('search', '%' . $filters['search'] . '%');
+        }
+        if (!empty($filters['dateFrom'])) {
+            $qb->andWhere('t.createdAt >= :dateFrom')->setParameter('dateFrom', $filters['dateFrom']);
+        }
+        if (!empty($filters['dateTo'])) {
+            $qb->andWhere('t.createdAt <= :dateTo')->setParameter('dateTo', $filters['dateTo'] . ' 23:59:59');
+        }
+    }
+
+    private function applySorting(QueryBuilder $qb, ?string $sortField, ?string $sortOrder): void
+    {
+        $allowed = ['createdAt', 'title', 'status', 'priority'];
+        $field = in_array($sortField, $allowed) ? $sortField : 'createdAt';
+        $order = $sortOrder === 'asc' ? 'ASC' : 'DESC';
+        $qb->orderBy('t.' . $field, $order);
+    }
+
+    public function findByUserRole(User $user, int $limit, int $offset, array $filters = [], ?string $sortField = null, ?string $sortOrder = null): array
     {
         $qb = $this->createQueryBuilder('t')
-            ->orderBy('t.createdAt', 'DESC')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
         $this->applyRoleFilter($qb, $user);
+        $this->applyFilters($qb, $filters);
+        $this->applySorting($qb, $sortField, $sortOrder);
 
         return $qb->getQuery()->getResult();
     }
 
-    public function countByUserRole(User $user): int
+    public function countByUserRole(User $user, array $filters = []): int
     {
         $qb = $this->createQueryBuilder('t')
             ->select('COUNT(t.id)');
 
         $this->applyRoleFilter($qb, $user);
+        $this->applyFilters($qb, $filters);
 
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
