@@ -1,0 +1,16 @@
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+ARG VITE_BASE_DOMAIN=ticketerr.cc
+ENV VITE_BASE_DOMAIN=$VITE_BASE_DOMAIN
+RUN npm run build-only
+
+FROM alpine:latest
+COPY --from=build /app/dist /dist
+# Keep container running so volume stays mounted
+CMD ["sleep", "infinity"]

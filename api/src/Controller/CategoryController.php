@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Category;
+use App\Entity\User;
 use App\Repository\CategoryRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -16,8 +17,12 @@ class CategoryController extends AbstractController
     #[Route('', methods: ['GET'])]
     public function list(CategoryRepository $repo): JsonResponse
     {
+        /** @var User $user */
+        $user = $this->getUser();
+        $org = $user->getOrganization();
+
         return $this->json(
-            $repo->findBy([], ['name' => 'ASC']),
+            $repo->findBy(['organization' => $org], ['name' => 'ASC']),
             200,
             [],
             ['groups' => ['category:read']],
@@ -29,11 +34,14 @@ class CategoryController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
+        /** @var User $user */
+        $user = $this->getUser();
         $data = json_decode($request->getContent(), true);
 
         $category = new Category();
         $category->setName($data['name'] ?? '');
         $category->setDescription($data['description'] ?? null);
+        $category->setOrganization($user->getOrganization());
 
         $em->persist($category);
         $em->flush();

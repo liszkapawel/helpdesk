@@ -6,6 +6,7 @@
 /api/public/bundles/
 /api/var/
 /api/vendor/
+/api/public/uploads/
 
 ###> phpunit/phpunit ###
 /api/phpunit.xml
@@ -15,6 +16,10 @@
 ### Frontend (Vue 3) ###
 /frontend/node_modules/
 /frontend/dist/
+
+### Production ###
+.env.prod
+.htpasswd
 
 ### IDE ###
 .idea/

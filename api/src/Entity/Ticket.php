@@ -57,9 +57,19 @@ class Ticket
     private ?Organization $organization = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'createdTickets')]
-    #[ORM\JoinColumn(nullable: false)]
     #[Groups(['ticket:read', 'ticket:list'])]
     private ?User $createdBy = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['ticket:read', 'ticket:list'])]
+    private ?string $submitterName = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['ticket:read', 'ticket:list'])]
+    private ?string $submitterEmail = null;
+
+    #[ORM\Column(length: 64, nullable: true, unique: true)]
+    private ?string $trackingToken = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'assignedTickets')]
     #[Groups(['ticket:read', 'ticket:list'])]
@@ -216,5 +226,38 @@ class Ticket
     public function getAttachments(): Collection
     {
         return $this->attachments;
+    }
+
+    public function getSubmitterName(): ?string
+    {
+        return $this->submitterName;
+    }
+
+    public function setSubmitterName(?string $submitterName): static
+    {
+        $this->submitterName = $submitterName;
+        return $this;
+    }
+
+    public function getSubmitterEmail(): ?string
+    {
+        return $this->submitterEmail;
+    }
+
+    public function setSubmitterEmail(?string $submitterEmail): static
+    {
+        $this->submitterEmail = $submitterEmail;
+        return $this;
+    }
+
+    public function getTrackingToken(): ?string
+    {
+        return $this->trackingToken;
+    }
+
+    public function setTrackingToken(?string $trackingToken): static
+    {
+        $this->trackingToken = $trackingToken;
+        return $this;
     }
 }

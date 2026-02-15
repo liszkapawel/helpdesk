@@ -18,13 +18,16 @@ class Category
     #[Groups(['category:read'])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 100, unique: true)]
+    #[ORM\Column(length: 100)]
     #[Groups(['category:read'])]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(['category:read'])]
     private ?string $description = null;
+
+    #[ORM\ManyToOne(targetEntity: Organization::class, inversedBy: 'categories')]
+    private ?Organization $organization = null;
 
     /** @var Collection<int, Ticket> */
     #[ORM\OneToMany(targetEntity: Ticket::class, mappedBy: 'category')]
@@ -59,6 +62,17 @@ class Category
     public function setDescription(?string $description): static
     {
         $this->description = $description;
+        return $this;
+    }
+
+    public function getOrganization(): ?Organization
+    {
+        return $this->organization;
+    }
+
+    public function setOrganization(?Organization $organization): static
+    {
+        $this->organization = $organization;
         return $this;
     }
 

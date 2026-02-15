@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\OrganizationRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -27,6 +28,18 @@ class Organization
     #[Groups(['organization:read'])]
     private ?string $slug = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['organization:read'])]
+    private ?string $description = null;
+
+    #[ORM\Column(length: 7, nullable: true)]
+    #[Groups(['organization:read'])]
+    private ?string $primaryColor = '#3B82F6';
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['organization:read'])]
+    private ?string $logoPath = null;
+
     #[ORM\Column]
     #[Groups(['organization:read'])]
     private \DateTimeImmutable $createdAt;
@@ -39,11 +52,16 @@ class Organization
     #[ORM\OneToMany(targetEntity: Ticket::class, mappedBy: 'organization')]
     private Collection $tickets;
 
+    /** @var Collection<int, Category> */
+    #[ORM\OneToMany(targetEntity: Category::class, mappedBy: 'organization')]
+    private Collection $categories;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->users = new ArrayCollection();
         $this->tickets = new ArrayCollection();
+        $this->categories = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -73,6 +91,39 @@ class Organization
         return $this;
     }
 
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
+        return $this;
+    }
+
+    public function getPrimaryColor(): ?string
+    {
+        return $this->primaryColor;
+    }
+
+    public function setPrimaryColor(?string $primaryColor): static
+    {
+        $this->primaryColor = $primaryColor;
+        return $this;
+    }
+
+    public function getLogoPath(): ?string
+    {
+        return $this->logoPath;
+    }
+
+    public function setLogoPath(?string $logoPath): static
+    {
+        $this->logoPath = $logoPath;
+        return $this;
+    }
+
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -88,5 +139,11 @@ class Organization
     public function getTickets(): Collection
     {
         return $this->tickets;
+    }
+
+    /** @return Collection<int, Category> */
+    public function getCategories(): Collection
+    {
+        return $this->categories;
     }
 }
