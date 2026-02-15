@@ -5,7 +5,6 @@ import { useToast } from 'primevue/usetoast'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
-import Card from 'primevue/card'
 import SelectButton from 'primevue/selectbutton'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
@@ -22,8 +21,8 @@ const lastName = ref('')
 const loading = ref(false)
 
 const modes = [
-  { label: 'Create Organization', value: 'create' },
-  { label: 'Join with Invite', value: 'join' },
+  { label: 'Nowa organizacja', value: 'create' },
+  { label: 'Dołącz z zaproszeniem', value: 'join' },
 ]
 const mode = ref('create')
 const organizationName = ref('')
@@ -47,7 +46,6 @@ watch(inviteCode, async (code) => {
   }
 })
 
-// If invite code in URL, switch to join mode
 if (inviteCode.value) {
   mode.value = 'join'
 }
@@ -63,13 +61,13 @@ async function submit() {
       mode.value === 'join' ? inviteCode.value : undefined,
       mode.value === 'create' ? organizationName.value : undefined,
     )
-    toast.add({ severity: 'success', summary: 'Success', detail: 'Account created. Please login.', life: 3000 })
+    toast.add({ severity: 'success', summary: 'Sukces', detail: 'Konto utworzone. Zaloguj się.', life: 3000 })
     router.push('/login')
   } catch (err: any) {
     const errors = err.response?.data?.errors
     const error = err.response?.data?.error
-    const detail = errors ? Object.values(errors).join(', ') : error || 'Registration failed'
-    toast.add({ severity: 'error', summary: 'Error', detail, life: 5000 })
+    const detail = errors ? Object.values(errors).join(', ') : error || 'Rejestracja nie powiodła się'
+    toast.add({ severity: 'error', summary: 'Błąd', detail, life: 5000 })
   } finally {
     loading.value = false
   }
@@ -77,48 +75,74 @@ async function submit() {
 </script>
 
 <template>
-  <div class="flex items-center justify-center min-h-screen">
-    <Card class="w-full max-w-md">
-      <template #title>Register</template>
-      <template #content>
+  <div class="flex min-h-screen">
+    <!-- Left panel -->
+    <div class="hidden lg:flex lg:w-1/2 bg-primary/5 items-center justify-center p-12">
+      <div class="max-w-md">
+        <div class="flex items-center gap-2 mb-8">
+          <i class="pi pi-shield text-primary text-2xl"></i>
+          <span class="font-bold text-xl tracking-tight">Helpdesk</span>
+        </div>
+        <h2 class="text-3xl font-bold tracking-tight mb-4">Dołącz do Helpdesk</h2>
+        <p class="text-surface-500 leading-relaxed">
+          Stwórz organizację lub dołącz do istniejącej za pomocą kodu zaproszenia.
+        </p>
+      </div>
+    </div>
+
+    <!-- Right panel — form -->
+    <div class="flex-1 flex items-center justify-center p-6">
+      <div class="w-full max-w-sm">
+        <div class="flex items-center gap-2 mb-8 lg:hidden">
+          <i class="pi pi-shield text-primary text-xl"></i>
+          <span class="font-bold text-lg">Helpdesk</span>
+        </div>
+
+        <h1 class="text-2xl font-bold mb-1">Zarejestruj się</h1>
+        <p class="text-surface-500 text-sm mb-8">Utwórz konto, aby rozpocząć</p>
+
         <form class="flex flex-col gap-4" @submit.prevent="submit">
-          <SelectButton v-model="mode" :options="modes" option-label="label" option-value="value" class="w-full" />
+          <SelectButton v-model="mode" :options="modes" option-label="label" option-value="value" :allow-empty="false" />
 
-          <div class="flex flex-col gap-1">
-            <label for="firstName">First Name</label>
-            <InputText id="firstName" v-model="firstName" placeholder="First Name" required />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label for="lastName">Last Name</label>
-            <InputText id="lastName" v-model="lastName" placeholder="Last Name" required />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label for="email">Email</label>
-            <InputText id="email" v-model="email" type="email" placeholder="Email" required />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label for="password">Password</label>
-            <Password id="password" v-model="password" placeholder="Password (min 6 characters)" toggle-mask required fluid />
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1.5">
+              <label for="firstName" class="text-sm font-medium">Imię</label>
+              <InputText id="firstName" v-model="firstName" placeholder="Jan" required />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label for="lastName" class="text-sm font-medium">Nazwisko</label>
+              <InputText id="lastName" v-model="lastName" placeholder="Kowalski" required />
+            </div>
           </div>
 
-          <div v-if="mode === 'create'" class="flex flex-col gap-1">
-            <label for="orgName">Organization Name</label>
-            <InputText id="orgName" v-model="organizationName" placeholder="Your company or team name" required />
+          <div class="flex flex-col gap-1.5">
+            <label for="email" class="text-sm font-medium">Email</label>
+            <InputText id="email" v-model="email" type="email" placeholder="jan@firma.pl" required />
           </div>
 
-          <div v-if="mode === 'join'" class="flex flex-col gap-1">
-            <label for="inviteCode">Invite Code</label>
-            <InputText id="inviteCode" v-model="inviteCode" placeholder="Paste your invite code" required />
-            <small v-if="inviteOrgName" class="text-green-500">Joining: {{ inviteOrgName }}</small>
+          <div class="flex flex-col gap-1.5">
+            <label for="password" class="text-sm font-medium">Hasło</label>
+            <Password id="password" v-model="password" placeholder="Min. 6 znaków" toggle-mask required fluid />
           </div>
 
-          <Button type="submit" label="Register" :loading="loading" />
-          <p class="text-center text-sm">
-            Already have an account?
-            <router-link to="/login" class="text-primary">Login</router-link>
+          <div v-if="mode === 'create'" class="flex flex-col gap-1.5">
+            <label for="orgName" class="text-sm font-medium">Nazwa organizacji</label>
+            <InputText id="orgName" v-model="organizationName" placeholder="Nazwa firmy lub zespołu" required />
+          </div>
+
+          <div v-if="mode === 'join'" class="flex flex-col gap-1.5">
+            <label for="inviteCode" class="text-sm font-medium">Kod zaproszenia</label>
+            <InputText id="inviteCode" v-model="inviteCode" placeholder="Wklej kod zaproszenia" required />
+            <small v-if="inviteOrgName" class="text-green-600 font-medium">Dołączasz do: {{ inviteOrgName }}</small>
+          </div>
+
+          <Button type="submit" label="Zarejestruj się" :loading="loading" class="mt-2" />
+          <p class="text-center text-sm text-surface-500">
+            Masz już konto?
+            <router-link to="/login" class="text-primary font-medium hover:underline">Zaloguj się</router-link>
           </p>
         </form>
-      </template>
-    </Card>
+      </div>
+    </div>
   </div>
 </template>

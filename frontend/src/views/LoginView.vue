@@ -5,7 +5,6 @@ import { useToast } from 'primevue/usetoast'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
-import Card from 'primevue/card'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -22,7 +21,7 @@ async function submit() {
     await auth.login(email.value, password.value)
     router.push('/dashboard')
   } catch {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Invalid credentials', life: 3000 })
+    toast.add({ severity: 'error', summary: 'Błąd', detail: 'Nieprawidłowe dane logowania', life: 3000 })
   } finally {
     loading.value = false
   }
@@ -30,26 +29,48 @@ async function submit() {
 </script>
 
 <template>
-  <div class="flex items-center justify-center min-h-screen">
-    <Card class="w-full max-w-md">
-      <template #title>Login</template>
-      <template #content>
-        <form class="flex flex-col gap-4" @submit.prevent="submit">
-          <div class="flex flex-col gap-1">
-            <label for="email">Email</label>
-            <InputText id="email" v-model="email" type="email" placeholder="Email" required />
+  <div class="flex min-h-screen">
+    <!-- Left panel -->
+    <div class="hidden lg:flex lg:w-1/2 bg-primary/5 items-center justify-center p-12">
+      <div class="max-w-md">
+        <div class="flex items-center gap-2 mb-8">
+          <i class="pi pi-shield text-primary text-2xl"></i>
+          <span class="font-bold text-xl tracking-tight">Helpdesk</span>
+        </div>
+        <h2 class="text-3xl font-bold tracking-tight mb-4">Zarządzaj zgłoszeniami w jednym miejscu</h2>
+        <p class="text-surface-500 leading-relaxed">
+          Twórz tickety, przypisuj je do zespołu i śledź postępy w czasie rzeczywistym.
+        </p>
+      </div>
+    </div>
+
+    <!-- Right panel — form -->
+    <div class="flex-1 flex items-center justify-center p-6">
+      <div class="w-full max-w-sm">
+        <div class="flex items-center gap-2 mb-8 lg:hidden">
+          <i class="pi pi-shield text-primary text-xl"></i>
+          <span class="font-bold text-lg">Helpdesk</span>
+        </div>
+
+        <h1 class="text-2xl font-bold mb-1">Zaloguj się</h1>
+        <p class="text-surface-500 text-sm mb-8">Wprowadź dane, aby przejść do panelu</p>
+
+        <form class="flex flex-col gap-5" @submit.prevent="submit">
+          <div class="flex flex-col gap-1.5">
+            <label for="email" class="text-sm font-medium">Email</label>
+            <InputText id="email" v-model="email" type="email" placeholder="jan@firma.pl" required />
           </div>
-          <div class="flex flex-col gap-1">
-            <label for="password">Password</label>
-            <Password id="password" v-model="password" placeholder="Password" :feedback="false" toggle-mask required fluid />
+          <div class="flex flex-col gap-1.5">
+            <label for="password" class="text-sm font-medium">Hasło</label>
+            <Password id="password" v-model="password" placeholder="Twoje hasło" :feedback="false" toggle-mask required fluid />
           </div>
-          <Button type="submit" label="Login" :loading="loading" />
-          <p class="text-center text-sm">
-            Don't have an account?
-            <router-link to="/register" class="text-primary">Register</router-link>
+          <Button type="submit" label="Zaloguj się" :loading="loading" class="mt-2" />
+          <p class="text-center text-sm text-surface-500">
+            Nie masz konta?
+            <router-link to="/register" class="text-primary font-medium hover:underline">Zarejestruj się</router-link>
           </p>
         </form>
-      </template>
-    </Card>
+      </div>
+    </div>
   </div>
 </template>

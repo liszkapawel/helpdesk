@@ -12,15 +12,13 @@ const users = ref<any[]>([])
 const loading = ref(false)
 
 const roleOptions = [
-  { label: 'User', value: 'ROLE_USER' },
+  { label: 'Użytkownik', value: 'ROLE_USER' },
   { label: 'Agent', value: 'ROLE_AGENT' },
   { label: 'Admin', value: 'ROLE_ADMIN' },
 ]
 
 const roleSeverity: Record<string, string> = {
-  ROLE_USER: 'info',
-  ROLE_AGENT: 'warn',
-  ROLE_ADMIN: 'danger',
+  ROLE_USER: 'info', ROLE_AGENT: 'warn', ROLE_ADMIN: 'danger',
 }
 
 function getHighestRole(roles: string[]): string {
@@ -48,9 +46,9 @@ async function changeRole(user: any, newRole: string) {
     const { data } = await api.put(`/admin/users/${user.id}/role`, { role: newRole })
     const idx = users.value.findIndex(u => u.id === user.id)
     if (idx !== -1) users.value[idx] = data
-    toast.add({ severity: 'success', summary: 'Updated', detail: `Role changed to ${getRoleLabel(newRole)}`, life: 3000 })
+    toast.add({ severity: 'success', summary: 'Zaktualizowano', detail: `Rola zmieniona na ${getRoleLabel(newRole)}`, life: 3000 })
   } catch {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to update role', life: 3000 })
+    toast.add({ severity: 'error', summary: 'Błąd', detail: 'Nie udało się zmienić roli', life: 3000 })
   }
 }
 
@@ -59,28 +57,40 @@ onMounted(loadUsers)
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-4">User Management</h1>
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold tracking-tight">Użytkownicy</h1>
+      <p class="text-surface-500 text-sm mt-1">Zarządzaj użytkownikami i ich rolami</p>
+    </div>
 
-    <DataTable :value="users" :loading="loading" striped-rows>
-      <Column field="id" header="ID" style="width: 60px" />
-      <Column header="Name">
-        <template #body="{ data }">
-          {{ data.firstName }} {{ data.lastName }}
-        </template>
-      </Column>
-      <Column field="email" header="Email" />
-      <Column header="Role" style="width: 200px">
-        <template #body="{ data }">
-          <Select
-            :model-value="getHighestRole(data.roles)"
-            :options="roleOptions"
-            option-label="label"
-            option-value="value"
-            @update:model-value="(val: string) => changeRole(data, val)"
-            class="w-full"
-          />
-        </template>
-      </Column>
-    </DataTable>
+    <div class="bg-surface-0 rounded-xl border border-surface-200">
+      <DataTable :value="users" :loading="loading" striped-rows>
+        <Column field="id" header="#" style="width: 60px" />
+        <Column header="Użytkownik">
+          <template #body="{ data }">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <span class="text-primary text-xs font-semibold">{{ data.firstName?.[0] }}{{ data.lastName?.[0] }}</span>
+              </div>
+              <div>
+                <div class="font-medium text-sm">{{ data.firstName }} {{ data.lastName }}</div>
+                <div class="text-xs text-surface-400">{{ data.email }}</div>
+              </div>
+            </div>
+          </template>
+        </Column>
+        <Column header="Rola" style="width: 200px">
+          <template #body="{ data }">
+            <Select
+              :model-value="getHighestRole(data.roles)"
+              :options="roleOptions"
+              option-label="label"
+              option-value="value"
+              @update:model-value="(val: string) => changeRole(data, val)"
+              class="w-full"
+            />
+          </template>
+        </Column>
+      </DataTable>
+    </div>
   </div>
 </template>

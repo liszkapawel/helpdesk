@@ -19,10 +19,10 @@ const categories = ref<any[]>([])
 const loading = ref(false)
 
 const priorities = [
-  { label: 'Low', value: 'low' },
-  { label: 'Medium', value: 'medium' },
-  { label: 'High', value: 'high' },
-  { label: 'Critical', value: 'critical' },
+  { label: 'Niski', value: 'low' },
+  { label: 'Średni', value: 'medium' },
+  { label: 'Wysoki', value: 'high' },
+  { label: 'Krytyczny', value: 'critical' },
 ]
 
 async function loadCategories() {
@@ -33,21 +33,15 @@ async function loadCategories() {
 async function submit() {
   loading.value = true
   try {
-    const payload: any = {
-      title: title.value,
-      description: description.value,
-      priority: priority.value,
-    }
-    if (categoryId.value) {
-      payload.category = categoryId.value
-    }
+    const payload: any = { title: title.value, description: description.value, priority: priority.value }
+    if (categoryId.value) payload.category = categoryId.value
     const { data } = await api.post('/tickets', payload)
-    toast.add({ severity: 'success', summary: 'Created', detail: 'Ticket created', life: 3000 })
+    toast.add({ severity: 'success', summary: 'Sukces', detail: 'Ticket utworzony', life: 3000 })
     router.push(`/tickets/${data.id}`)
   } catch (err: any) {
     const errors = err.response?.data?.errors
-    const detail = errors ? Object.values(errors).join(', ') : 'Failed to create ticket'
-    toast.add({ severity: 'error', summary: 'Error', detail, life: 5000 })
+    const detail = errors ? Object.values(errors).join(', ') : 'Nie udało się utworzyć ticketa'
+    toast.add({ severity: 'error', summary: 'Błąd', detail, life: 5000 })
   } finally {
     loading.value = false
   }
@@ -58,50 +52,40 @@ onMounted(loadCategories)
 
 <template>
   <div class="max-w-2xl">
-    <h1 class="text-2xl font-bold mb-4">New Ticket</h1>
+    <div class="mb-6">
+      <Button icon="pi pi-arrow-left" text severity="secondary" size="small" @click="router.push('/tickets')" label="Wróć do listy" />
+    </div>
 
-    <form class="flex flex-col gap-4" @submit.prevent="submit">
-      <div class="flex flex-col gap-1">
-        <label for="title">Title</label>
-        <InputText id="title" v-model="title" placeholder="Ticket title" required />
-      </div>
+    <div class="bg-surface-0 rounded-xl border border-surface-200 p-6">
+      <h1 class="text-xl font-bold mb-6">Nowy ticket</h1>
 
-      <div class="flex flex-col gap-1">
-        <label for="description">Description</label>
-        <Textarea id="description" v-model="description" placeholder="Describe the issue..." rows="6" required />
-      </div>
-
-      <div class="flex gap-4">
-        <div class="flex flex-col gap-1 flex-1">
-          <label for="priority">Priority</label>
-          <Select
-            id="priority"
-            v-model="priority"
-            :options="priorities"
-            option-label="label"
-            option-value="value"
-            placeholder="Select priority"
-          />
+      <form class="flex flex-col gap-5" @submit.prevent="submit">
+        <div class="flex flex-col gap-1.5">
+          <label for="title" class="text-sm font-medium">Tytuł</label>
+          <InputText id="title" v-model="title" placeholder="Krótki opis problemu" required />
         </div>
 
-        <div class="flex flex-col gap-1 flex-1">
-          <label for="category">Category</label>
-          <Select
-            id="category"
-            v-model="categoryId"
-            :options="categories"
-            option-label="name"
-            option-value="id"
-            placeholder="Select category"
-            show-clear
-          />
+        <div class="flex flex-col gap-1.5">
+          <label for="description" class="text-sm font-medium">Opis</label>
+          <Textarea id="description" v-model="description" placeholder="Opisz problem szczegółowo..." rows="6" required />
         </div>
-      </div>
 
-      <div class="flex gap-2">
-        <Button type="submit" label="Create Ticket" :loading="loading" />
-        <Button type="button" label="Cancel" severity="secondary" text @click="router.back()" />
-      </div>
-    </form>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex flex-col gap-1.5">
+            <label for="priority" class="text-sm font-medium">Priorytet</label>
+            <Select id="priority" v-model="priority" :options="priorities" option-label="label" option-value="value" placeholder="Wybierz priorytet" />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label for="category" class="text-sm font-medium">Kategoria</label>
+            <Select id="category" v-model="categoryId" :options="categories" option-label="name" option-value="id" placeholder="Wybierz kategorię" show-clear />
+          </div>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <Button type="submit" label="Utwórz ticket" icon="pi pi-check" :loading="loading" />
+          <Button type="button" label="Anuluj" severity="secondary" outlined @click="router.back()" />
+        </div>
+      </form>
+    </div>
   </div>
 </template>
