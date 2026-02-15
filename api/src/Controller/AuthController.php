@@ -6,6 +6,7 @@ use App\Entity\Invite;
 use App\Entity\Organization;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,15 +15,73 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+#[OA\Tag(name: 'Autoryzacja')]
 class AuthController extends AbstractController
 {
+    #[Route('/api/login', methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Logowanie',
+        description: 'Zwraca token JWT',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['email', 'password'],
+                properties: [
+                    new OA\Property(property: 'email', type: 'string', example: 'jan@firma.pl'),
+                    new OA\Property(property: 'password', type: 'string', example: 'haslo123'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Token JWT', content: new OA\JsonContent(
+                properties: [new OA\Property(property: 'token', type: 'string')]
+            )),
+            new OA\Response(response: 401, description: 'Nieprawidłowe dane'),
+        ]
+    )]
+    public function login(): void
+    {
+        // Handled by lexik/jwt-authentication-bundle
+    }
+
     #[Route('/api/me', methods: ['GET'])]
+    #[OA\Get(
+        summary: 'Aktualny użytkownik',
+        description: 'Zwraca dane zalogowanego użytkownika z organizacją',
+        responses: [
+            new OA\Response(response: 200, description: 'Dane użytkownika'),
+            new OA\Response(response: 401, description: 'Brak autoryzacji'),
+        ]
+    )]
     public function me(): JsonResponse
     {
         return $this->json($this->getUser(), 200, [], ['groups' => ['user:read', 'organization:read']]);
     }
 
     #[Route('/api/register', methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Rejestracja',
+        description: 'Tworzy nowe konto. Wymaga inviteCode (dołączenie do org) lub organizationName (nowa org)',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['email', 'password', 'firstName', 'lastName'],
+                properties: [
+                    new OA\Property(property: 'email', type: 'string', example: 'jan@firma.pl'),
+                    new OA\Property(property: 'password', type: 'string', example: 'haslo123'),
+                    new OA\Property(property: 'firstName', type: 'string', example: 'Jan'),
+                    new OA\Property(property: 'lastName', type: 'string', example: 'Kowalski'),
+                    new OA\Property(property: 'inviteCode', type: 'string', nullable: true),
+                    new OA\Property(property: 'organizationName', type: 'string', nullable: true, example: 'Moja Firma'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Użytkownik utworzony'),
+            new OA\Response(response: 400, description: 'Brak inviteCode/organizationName'),
+            new OA\Response(response: 422, description: 'Błędy walidacji'),
+        ]
+    )]
     public function register(
         Request $request,
         UserPasswordHasherInterface $passwordHasher,

@@ -7,15 +7,28 @@ use App\Enum\TicketPriority;
 use App\Repository\OrganizationRepository;
 use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
+#[OA\Tag(name: 'Portal publiczny')]
 #[Route('/api/public')]
 class PublicPortalController extends AbstractController
 {
     #[Route('/org/{slug}', methods: ['GET'])]
+    #[OA\Get(
+        summary: 'Informacje o organizacji',
+        description: 'Publiczny endpoint — bez autoryzacji. Zwraca dane organizacji widoczne na portalu',
+        parameters: [
+            new OA\Parameter(name: 'slug', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Dane organizacji'),
+            new OA\Response(response: 404, description: 'Organizacja nie znaleziona'),
+        ]
+    )]
     public function orgInfo(string $slug, OrganizationRepository $repo): JsonResponse
     {
         $org = $repo->findOneBy(['slug' => $slug]);
@@ -34,6 +47,30 @@ class PublicPortalController extends AbstractController
     }
 
     #[Route('/tickets', methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Zgłoś ticket (publiczny)',
+        description: 'Publiczny endpoint — bez autoryzacji. Wymaga nagłówka X-Org-Slug',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['name', 'email', 'title', 'description'],
+                properties: [
+                    new OA\Property(property: 'name', type: 'string', example: 'Jan Kowalski'),
+                    new OA\Property(property: 'email', type: 'string', example: 'jan@example.com'),
+                    new OA\Property(property: 'title', type: 'string', example: 'Problem z logowaniem'),
+                    new OA\Property(property: 'description', type: 'string', example: 'Nie mogę się zalogować'),
+                    new OA\Property(property: 'priority', type: 'string', enum: ['low', 'medium', 'high', 'critical']),
+                    new OA\Property(property: 'category', type: 'integer', description: 'ID kategorii'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Ticket utworzony — zwraca ticketId i trackingToken'),
+            new OA\Response(response: 400, description: 'Brak X-Org-Slug'),
+            new OA\Response(response: 404, description: 'Organizacja nie znaleziona'),
+            new OA\Response(response: 422, description: 'Brakujące pola'),
+        ]
+    )]
     public function submitTicket(Request $request, OrganizationRepository $orgRepo, EntityManagerInterface $em): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -89,6 +126,25 @@ class PublicPortalController extends AbstractController
     }
 
     #[Route('/tickets/track', methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Sprawdź status ticketa',
+        description: 'Publiczny endpoint — bez autoryzacji. Wyszukuje ticket po email i ID',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['email', 'ticketId'],
+                properties: [
+                    new OA\Property(property: 'email', type: 'string', example: 'jan@example.com'),
+                    new OA\Property(property: 'ticketId', type: 'integer', example: 42),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Status ticketa'),
+            new OA\Response(response: 404, description: 'Ticket nie znaleziony'),
+            new OA\Response(response: 422, description: 'Brakujące pola'),
+        ]
+    )]
     public function trackTicket(Request $request, TicketRepository $repo): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -119,6 +175,17 @@ class PublicPortalController extends AbstractController
     }
 
     #[Route('/org/{slug}/categories', methods: ['GET'])]
+    #[OA\Get(
+        summary: 'Kategorie organizacji',
+        description: 'Publiczny endpoint — bez autoryzacji',
+        parameters: [
+            new OA\Parameter(name: 'slug', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Lista kategorii'),
+            new OA\Response(response: 404, description: 'Organizacja nie znaleziona'),
+        ]
+    )]
     public function orgCategories(string $slug, OrganizationRepository $orgRepo): JsonResponse
     {
         $org = $orgRepo->findOneBy(['slug' => $slug]);

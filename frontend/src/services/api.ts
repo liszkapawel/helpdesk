@@ -23,8 +23,10 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
+      // Only redirect if the user is actively on a protected route
+      // Use a small delay to ensure the router has settled after initial navigation
       const current = router.currentRoute.value
-      if (!current.meta.public) {
+      if (current.name && !current.meta.public) {
         router.push('/login')
       }
     }

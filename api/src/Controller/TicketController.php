@@ -10,12 +10,14 @@ use App\Repository\TicketRepository;
 use App\Service\AuditService;
 use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+#[OA\Tag(name: 'Tickety')]
 #[Route('/api/tickets')]
 class TicketController extends AbstractController
 {
@@ -26,6 +28,17 @@ class TicketController extends AbstractController
     }
 
     #[Route('', methods: ['GET'])]
+    #[OA\Get(
+        summary: 'Lista ticketów',
+        description: 'Zwraca paginowaną listę ticketów. Admini/agenci widzą tickety organizacji, użytkownicy tylko swoje',
+        parameters: [
+            new OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer', default: 1)),
+            new OA\Parameter(name: 'limit', in: 'query', schema: new OA\Schema(type: 'integer', default: 20, maximum: 100)),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Lista ticketów z metadanymi paginacji'),
+        ]
+    )]
     public function list(Request $request, TicketRepository $repo): JsonResponse
     {
         $page = max(1, (int) $request->query->get('page', 1));
@@ -48,6 +61,25 @@ class TicketController extends AbstractController
     }
 
     #[Route('', methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Utwórz ticket',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['title', 'description'],
+                properties: [
+                    new OA\Property(property: 'title', type: 'string', example: 'Problem z logowaniem'),
+                    new OA\Property(property: 'description', type: 'string', example: 'Nie mogę się zalogować do systemu'),
+                    new OA\Property(property: 'priority', type: 'string', enum: ['low', 'medium', 'high', 'critical']),
+                    new OA\Property(property: 'category', type: 'integer', description: 'ID kategorii'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Ticket utworzony'),
+            new OA\Response(response: 422, description: 'Błędy walidacji'),
+        ]
+    )]
     public function create(
         Request $request,
         EntityManagerInterface $em,
@@ -106,6 +138,16 @@ class TicketController extends AbstractController
     }
 
     #[Route('/{id}', methods: ['GET'])]
+    #[OA\Get(
+        summary: 'Szczegóły ticketa',
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Szczegóły ticketa z komentarzami i załącznikami'),
+            new OA\Response(response: 404, description: 'Ticket nie znaleziony'),
+        ]
+    )]
     public function show(Ticket $ticket): JsonResponse
     {
         return $this->json(
@@ -117,6 +159,27 @@ class TicketController extends AbstractController
     }
 
     #[Route('/{id}', methods: ['PUT'])]
+    #[OA\Put(
+        summary: 'Aktualizuj ticket',
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(properties: [
+                new OA\Property(property: 'title', type: 'string'),
+                new OA\Property(property: 'description', type: 'string'),
+                new OA\Property(property: 'status', type: 'string', enum: ['new', 'open', 'in_progress', 'resolved', 'closed']),
+                new OA\Property(property: 'priority', type: 'string', enum: ['low', 'medium', 'high', 'critical']),
+                new OA\Property(property: 'category', type: 'integer', description: 'ID kategorii'),
+                new OA\Property(property: 'assignedTo', type: 'integer', nullable: true, description: 'ID agenta'),
+            ])
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Ticket zaktualizowany'),
+            new OA\Response(response: 403, description: 'Brak uprawnień'),
+            new OA\Response(response: 422, description: 'Błędy walidacji'),
+        ]
+    )]
     public function update(
         Ticket $ticket,
         Request $request,
@@ -219,6 +282,16 @@ class TicketController extends AbstractController
     }
 
     #[Route('/{id}', methods: ['DELETE'])]
+    #[OA\Delete(
+        summary: 'Usuń ticket',
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        responses: [
+            new OA\Response(response: 204, description: 'Ticket usunięty'),
+            new OA\Response(response: 403, description: 'Brak uprawnień'),
+        ]
+    )]
     public function delete(Ticket $ticket, EntityManagerInterface $em): JsonResponse
     {
         $this->denyAccessUnlessGranted('TICKET_DELETE', $ticket);

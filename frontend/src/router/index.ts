@@ -58,6 +58,10 @@ const mainRoutes = [
     component: () => import('@/views/SettingsView.vue'),
     meta: { requiresAdmin: true },
   },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/',
+  },
 ]
 
 const portalRoutes = [
@@ -126,6 +130,10 @@ const portalRoutes = [
     name: 'portal-settings',
     component: () => import('@/views/SettingsView.vue'),
     meta: { requiresAdmin: true, portal: true },
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/',
   },
 ]
 

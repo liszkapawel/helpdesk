@@ -4,16 +4,25 @@ namespace App\Controller;
 
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
+#[OA\Tag(name: 'Organizacja')]
 #[Route('/api/organization')]
 class OrganizationController extends AbstractController
 {
     #[Route('', methods: ['GET'])]
+    #[OA\Get(
+        summary: 'Dane organizacji',
+        description: 'Zwraca organizację zalogowanego użytkownika',
+        responses: [
+            new OA\Response(response: 200, description: 'Dane organizacji'),
+        ]
+    )]
     public function show(): JsonResponse
     {
         /** @var User $user */
@@ -23,6 +32,20 @@ class OrganizationController extends AbstractController
     }
 
     #[Route('', methods: ['PUT'])]
+    #[OA\Put(
+        summary: 'Aktualizuj organizację',
+        description: 'Wymaga ROLE_ADMIN',
+        requestBody: new OA\RequestBody(
+            content: new OA\JsonContent(properties: [
+                new OA\Property(property: 'name', type: 'string'),
+                new OA\Property(property: 'description', type: 'string', nullable: true),
+                new OA\Property(property: 'primaryColor', type: 'string', nullable: true, example: '#3B82F6'),
+            ])
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Organizacja zaktualizowana'),
+        ]
+    )]
     public function update(Request $request, EntityManagerInterface $em): JsonResponse
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
@@ -48,6 +71,23 @@ class OrganizationController extends AbstractController
     }
 
     #[Route('/logo', methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Upload logo organizacji',
+        description: 'Wymaga ROLE_ADMIN. Przesyłanie pliku multipart',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(properties: [
+                    new OA\Property(property: 'logo', type: 'string', format: 'binary'),
+                ])
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Logo zaktualizowane'),
+            new OA\Response(response: 400, description: 'Brak pliku'),
+        ]
+    )]
     public function uploadLogo(Request $request, EntityManagerInterface $em, SluggerInterface $slugger): JsonResponse
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');

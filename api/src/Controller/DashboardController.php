@@ -5,13 +5,22 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
+#[OA\Tag(name: 'Dashboard')]
 class DashboardController extends AbstractController
 {
     #[Route('/api/dashboard/stats', methods: ['GET'])]
+    #[OA\Get(
+        summary: 'Statystyki dashboard',
+        description: 'Zwraca statystyki ticketów: wg statusu, priorytetu, w czasie, avg resolution. Admini/agenci widzą też statystyki per agent',
+        responses: [
+            new OA\Response(response: 200, description: 'Statystyki'),
+        ]
+    )]
     public function stats(TicketRepository $ticketRepo, UserRepository $userRepo): JsonResponse
     {
         /** @var User $user */
