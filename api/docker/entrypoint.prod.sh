@@ -19,5 +19,8 @@ echo "==> Clearing cache..."
 php bin/console cache:clear --no-warmup
 php bin/console cache:warmup
 
+echo "==> Fixing permissions..."
+chown -R www-data:www-data var/
+
 echo "==> Ready!"
 exec "$@"
