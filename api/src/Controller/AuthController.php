@@ -18,7 +18,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[OA\Tag(name: 'Autoryzacja')]
 class AuthController extends AbstractController
 {
-    #[Route('/api/login', methods: ['POST'])]
+    #[Route('/api/login', name: 'api_login', methods: ['POST'])]
     #[OA\Post(
         summary: 'Logowanie',
         description: 'Zwraca token JWT',
