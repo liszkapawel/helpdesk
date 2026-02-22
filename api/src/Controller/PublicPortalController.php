@@ -182,7 +182,19 @@ class PublicPortalController extends AbstractController
         description: 'Publiczny endpoint - wymaga nagłówka X-Tracking-Token zamiast autoryzacji JWT',
         parameters: [
             new OA\Parameter(name: 'ticketId', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'X-Tracking-Token', in: 'header', required: true, schema: new OA\Schema(type: 'string')),
         ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(property: 'file', type: 'string', format: 'binary'),
+                    ]
+                )
+            )
+        ),
         responses: [
             new OA\Response(response: 201, description: 'Załącznik dodany'),
             new OA\Response(response: 400, description: 'Brak pliku'),

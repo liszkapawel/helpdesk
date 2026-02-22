@@ -354,6 +354,29 @@ class TicketController extends AbstractController
     }
 
     #[Route('/{id}/rate', methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Oceń ticket (satysfakcja)',
+        description: 'Ocena satysfakcji 1-5. Tylko właściciel ticketa, tylko status resolved/closed, tylko raz',
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['rating'],
+                properties: [
+                    new OA\Property(property: 'rating', type: 'integer', minimum: 1, maximum: 5, example: 4),
+                    new OA\Property(property: 'comment', type: 'string', example: 'Szybka i skuteczna pomoc'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Ocena zapisana'),
+            new OA\Response(response: 400, description: 'Ticket nie jest rozwiązany/zamknięty lub już oceniony'),
+            new OA\Response(response: 403, description: 'Tylko właściciel ticketa może ocenić'),
+            new OA\Response(response: 422, description: 'Ocena musi być między 1 a 5'),
+        ]
+    )]
     public function rate(Ticket $ticket, Request $request, EntityManagerInterface $em): JsonResponse
     {
         /** @var User $user */
