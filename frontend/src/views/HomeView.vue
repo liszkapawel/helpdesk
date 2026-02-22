@@ -41,7 +41,7 @@ const auth = useAuthStore()
         <span class="text-primary">sprawnie i przejrzyście</span>
       </h1>
       <p class="text-lg text-muted-color max-w-2xl mb-10 leading-relaxed">
-        Twórz tickety, przypisuj je do zespołu, śledź postępy — wszystko w jednym miejscu. Ticketerr, który pomaga utrzymać porządek.
+        Twórz tickety, przypisuj je do zespołu, śledź postępy - wszystko w jednym miejscu. Ticketerr, który pomaga utrzymać porządek.
       </p>
       <div class="flex gap-4">
         <template v-if="auth.isAuthenticated">

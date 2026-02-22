@@ -32,6 +32,9 @@ const orgStore = useOrganizationStore()
       <router-link to="/track">
         <Button label="Sprawdź status" icon="pi pi-search" size="large" severity="secondary" outlined />
       </router-link>
+      <router-link to="/faq">
+        <Button label="Baza wiedzy" icon="pi pi-book" size="large" severity="secondary" outlined />
+      </router-link>
     </div>
   </div>
 </template>

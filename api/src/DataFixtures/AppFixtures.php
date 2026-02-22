@@ -4,8 +4,10 @@ namespace App\DataFixtures;
 
 use App\Entity\Category;
 use App\Entity\Comment;
+use App\Entity\FaqArticle;
 use App\Entity\Invite;
 use App\Entity\Organization;
+use App\Entity\SlaPolicy;
 use App\Entity\Ticket;
 use App\Entity\User;
 use App\Enum\TicketPriority;
@@ -61,11 +63,11 @@ class AppFixtures extends Fixture
         $manager->flush();
 
         // ── Tickets: TechVision ──────────────────────────────
-        $this->createTicket($manager, 'VPN nie łączy z biurem', 'Po aktualizacji systemu VPN przestał działać. Próbowałem reinstalacji klienta — bez efektu.', TicketStatus::IN_PROGRESS, TicketPriority::HIGH, $techVision, $tvUser1, $tvAgent1, $tvInfra, '-3 days');
+        $this->createTicket($manager, 'VPN nie łączy z biurem', 'Po aktualizacji systemu VPN przestał działać. Próbowałem reinstalacji klienta - bez efektu.', TicketStatus::IN_PROGRESS, TicketPriority::HIGH, $techVision, $tvUser1, $tvAgent1, $tvInfra, '-3 days');
         $this->createTicket($manager, 'Brak dostępu do SharePoint', 'Nie mogę otworzyć folderu zespołu na SharePoint. Wyświetla się błąd 403.', TicketStatus::OPEN, TicketPriority::MEDIUM, $techVision, $tvUser2, $tvAgent1, $tvAccess, '-5 days');
         $this->createTicket($manager, 'Drukarka na 2. piętrze nie drukuje', 'HP LaserJet na 2. piętrze się zacina. Wymaga serwisu.', TicketStatus::NEW, TicketPriority::LOW, $techVision, $tvUser1, null, $tvHardware, '-1 day');
         $this->createTicket($manager, 'Outlook zawiesza się przy starcie', 'Od wczoraj Outlook zamraża się na 2 minuty po otwarciu. Windows 11, Office 365.', TicketStatus::RESOLVED, TicketPriority::MEDIUM, $techVision, $tvUser2, $tvAgent2, $tvApp, '-10 days');
-        $this->createTicket($manager, 'Prośba o nowy laptop', 'Potrzebuję nowego laptopa — obecny ma 5 lat i ledwo daje radę.', TicketStatus::OPEN, TicketPriority::LOW, $techVision, $tvUser1, null, $tvHardware, '-2 days');
+        $this->createTicket($manager, 'Prośba o nowy laptop', 'Potrzebuję nowego laptopa - obecny ma 5 lat i ledwo daje radę.', TicketStatus::OPEN, TicketPriority::LOW, $techVision, $tvUser1, null, $tvHardware, '-2 days');
         $this->createTicket($manager, 'Serwer testowy nie odpowiada', 'Serwer test-db-01 nie odpowiada na ping od rana. Blokuje deployment.', TicketStatus::IN_PROGRESS, TicketPriority::CRITICAL, $techVision, $tvAgent2, $tvAgent1, $tvInfra, '-1 day');
         $this->createTicket($manager, 'Nowe konto dla stażysty', 'Proszę o utworzenie konta AD i email dla nowego stażysty Jakub Malinowski, start 01.03.', TicketStatus::NEW, TicketPriority::MEDIUM, $techVision, $tvUser2, null, $tvAccess, '-6 hours');
         $this->createTicket($manager, 'Aktualizacja licencji Adobe', 'Licencje Adobe CC wygasają za tydzień. Potrzebne odnowienie dla 15 osób.', TicketStatus::OPEN, TicketPriority::HIGH, $techVision, $tvAdmin, $tvAgent2, $tvApp, '-4 days');
@@ -79,7 +81,7 @@ class AppFixtures extends Fixture
 
         // ── Tickets: EduPlatform ──────────────────────────────
         $this->createTicket($manager, 'Kurs "Python dla początkujących" nie ładuje się', 'Po opłaceniu kursu strona ładuje się w nieskończoność. Widzę spinner.', TicketStatus::OPEN, TicketPriority::HIGH, $eduPlatform, null, $epAgent, $epKursy, '-1 day', 'Marta Kowalczyk', 'marta.k@gmail.com');
-        $this->createTicket($manager, 'Prośba o zwrot za kurs', 'Chciałbym zwrot za kurs "Java Advanced" — nie odpowiada mi poziom.', TicketStatus::NEW, TicketPriority::MEDIUM, $eduPlatform, null, null, $epPlatnosci, '-5 hours', 'Adam Nowicki', 'adam.nowicki@wp.pl');
+        $this->createTicket($manager, 'Prośba o zwrot za kurs', 'Chciałbym zwrot za kurs "Java Advanced" - nie odpowiada mi poziom.', TicketStatus::NEW, TicketPriority::MEDIUM, $eduPlatform, null, null, $epPlatnosci, '-5 hours', 'Adam Nowicki', 'adam.nowicki@wp.pl');
         $this->createTicket($manager, 'Nie mogę zresetować hasła', 'Klikam "Zapomniałem hasła" ale mail nie przychodzi. Sprawdziłem spam.', TicketStatus::RESOLVED, TicketPriority::MEDIUM, $eduPlatform, null, $epAgent, $epKonto, '-3 days', 'Zofia Lis', 'z.lis@outlook.com');
 
         $manager->flush();
@@ -88,24 +90,24 @@ class AppFixtures extends Fixture
         $tickets = $manager->getRepository(Ticket::class)->findAll();
         $commentData = [
             'VPN nie łączy z biurem' => [
-                [$tvAgent1, 'Sprawdziłam konfigurację — certyfikat VPN wygasł. Generuję nowy.'],
+                [$tvAgent1, 'Sprawdziłam konfigurację - certyfikat VPN wygasł. Generuję nowy.'],
                 [$tvUser1, 'Dzięki, czekam na nowy certyfikat.'],
                 [$tvAgent1, 'Nowy certyfikat wysłany na maila. Proszę zaimportować i spróbować ponownie.'],
             ],
             'Serwer testowy nie odpowiada' => [
-                [$tvAgent1, 'Sprawdzam logi — wygląda na pełny dysk. Czyszczę stare snapshoty.'],
+                [$tvAgent1, 'Sprawdzam logi - wygląda na pełny dysk. Czyszczę stare snapshoty.'],
                 [$tvAgent2, 'Czy jest ETA? Blokuje to cały zespół QA.'],
                 [$tvAgent1, 'Zwolniłam 120GB. Serwer restartowany, powinien za chwilę odpowiadać.'],
             ],
             'System HIS nie generuje recept' => [
                 [$mcAgent, 'Problem po stronie P1 (serwer Ministerstwa Zdrowia). Sprawdzam status.'],
-                [$mcUser, 'Pacjenci czekają — czy jest obejście?'],
+                [$mcUser, 'Pacjenci czekają - czy jest obejście?'],
                 [$mcAgent, 'Na razie można wystawiać recepty papierowe. P1 obiecuje naprawę do 14:00.'],
             ],
             'Outlook zawiesza się przy starcie' => [
                 [$tvAgent2, 'Proszę spróbować uruchomić Outlook w trybie awaryjnym: outlook.exe /safe'],
                 [$tvUser2, 'W trybie awaryjnym działa! Co dalej?'],
-                [$tvAgent2, 'To pewnie wadliwy dodatek. Wyłączyłem dodatki COM — proszę uruchomić normalnie.'],
+                [$tvAgent2, 'To pewnie wadliwy dodatek. Wyłączyłem dodatki COM - proszę uruchomić normalnie.'],
                 [$tvUser2, 'Działa normalnie, dziękuję!'],
             ],
         ];
@@ -121,6 +123,23 @@ class AppFixtures extends Fixture
                 }
             }
         }
+
+        // ── FAQ Articles ──────────────────────────────
+        $this->createFaq($manager, $techVision, 'Jak połączyć się z VPN?', 'Aby połączyć się z VPN, pobierz klienta OpenVPN ze strony intranetowej, zaimportuj certyfikat przesłany na email i kliknij "Połącz". W razie problemów sprawdź czy certyfikat nie wygasł.', 0);
+        $this->createFaq($manager, $techVision, 'Jak zainstalować drukarkę sieciową?', 'Otwórz Ustawienia → Drukarki → Dodaj drukarkę. Wybierz drukarkę z listy sieciowej lub wpisz adres IP. Sterowniki zostaną zainstalowane automatycznie. Jeśli drukarki nie ma na liście, skontaktuj się z IT.', 1);
+        $this->createFaq($manager, $techVision, 'Jak zresetować hasło do poczty?', 'Przejdź na stronę https://mail.techvision.pl/reset i podaj swój adres email firmowy. Link do resetowania hasła zostanie wysłany na email zapasowy. Nowe hasło musi mieć min. 12 znaków.', 2);
+
+        $this->createFaq($manager, $mediCare, 'Jak wystawić e-receptę?', 'W systemie HIS przejdź do karty pacjenta → Recepty → Nowa e-recepta. Wybierz lek z bazy, ustaw dawkowanie i kliknij "Wyślij do P1". Recepta zostanie wysłana do systemu centralnego.', 0);
+        $this->createFaq($manager, $mediCare, 'Co zrobić gdy system HIS nie działa?', 'Sprawdź połączenie internetowe. Jeśli problem dotyczy tylko Twojego stanowiska, wyczyść cache przeglądarki i zaloguj się ponownie. Jeśli problem jest globalny, zgłoś ticket z priorytetem krytycznym.', 1);
+
+        $this->createFaq($manager, $eduPlatform, 'Jak uzyskać dostęp do kursu?', 'Po zakupie kursu dostęp jest aktywowany automatycznie w ciągu 5 minut. Zaloguj się na swoje konto i przejdź do sekcji "Moje kursy". Jeśli kurs nie jest widoczny, sprawdź czy płatność została zaksięgowana.', 0);
+        $this->createFaq($manager, $eduPlatform, 'Jak uzyskać fakturę?', 'Faktury są generowane automatycznie i wysyłane na email podany przy zakupie. Możesz też pobrać fakturę z sekcji "Moje zamówienia". Jeśli potrzebujesz faktury na firmę, zaktualizuj dane w ustawieniach konta przed zakupem.', 1);
+
+        // ── SLA Policies ──────────────────────────────
+        $this->createSlaPolicy($manager, $techVision, TicketPriority::LOW, 48, 168);
+        $this->createSlaPolicy($manager, $techVision, TicketPriority::MEDIUM, 24, 72);
+        $this->createSlaPolicy($manager, $techVision, TicketPriority::HIGH, 8, 24);
+        $this->createSlaPolicy($manager, $techVision, TicketPriority::CRITICAL, 2, 8);
 
         // ── Invites ──────────────────────────────
         $invite = new Invite();
@@ -208,5 +227,27 @@ class AppFixtures extends Fixture
 
         $manager->persist($ticket);
         return $ticket;
+    }
+
+    private function createFaq(ObjectManager $manager, Organization $org, string $title, string $content, int $position): FaqArticle
+    {
+        $faq = new FaqArticle();
+        $faq->setOrganization($org);
+        $faq->setTitle($title);
+        $faq->setContent($content);
+        $faq->setPosition($position);
+        $manager->persist($faq);
+        return $faq;
+    }
+
+    private function createSlaPolicy(ObjectManager $manager, Organization $org, TicketPriority $priority, int $responseHours, int $resolutionHours): SlaPolicy
+    {
+        $sla = new SlaPolicy();
+        $sla->setOrganization($org);
+        $sla->setPriority($priority);
+        $sla->setResponseHours($responseHours);
+        $sla->setResolutionHours($resolutionHours);
+        $manager->persist($sla);
+        return $sla;
     }
 }

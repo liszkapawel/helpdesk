@@ -59,6 +59,18 @@ const mainRoutes = [
     meta: { requiresAdmin: true },
   },
   {
+    path: '/admin/sla',
+    name: 'admin-sla',
+    component: () => import('@/views/admin/SlaSettingsView.vue'),
+    meta: { requiresAdmin: true },
+  },
+  {
+    path: '/admin/faq',
+    name: 'admin-faq',
+    component: () => import('@/views/admin/FaqListView.vue'),
+    meta: { requiresAdmin: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/',
   },
@@ -87,6 +99,12 @@ const portalRoutes = [
     path: '/track',
     name: 'portal-track',
     component: () => import('@/views/portal/TicketTrackView.vue'),
+    meta: { public: true, portal: true },
+  },
+  {
+    path: '/faq',
+    name: 'portal-faq',
+    component: () => import('@/views/portal/FaqView.vue'),
     meta: { public: true, portal: true },
   },
   {
@@ -129,6 +147,18 @@ const portalRoutes = [
     path: '/settings',
     name: 'portal-settings',
     component: () => import('@/views/SettingsView.vue'),
+    meta: { requiresAdmin: true, portal: true },
+  },
+  {
+    path: '/admin/sla',
+    name: 'portal-admin-sla',
+    component: () => import('@/views/admin/SlaSettingsView.vue'),
+    meta: { requiresAdmin: true, portal: true },
+  },
+  {
+    path: '/admin/faq',
+    name: 'portal-admin-faq',
+    component: () => import('@/views/admin/FaqListView.vue'),
     meta: { requiresAdmin: true, portal: true },
   },
   {

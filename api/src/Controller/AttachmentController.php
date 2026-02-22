@@ -60,6 +60,9 @@ class AttachmentController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
         $filename = bin2hex(random_bytes(16)) . '.' . ($file->guessExtension() ?? 'bin');
+        $originalName = $file->getClientOriginalName();
+        $mimeType = $file->getClientMimeType();
+        $size = $file->getSize();
         $uploadDir = $this->getUploadDir();
 
         if (!is_dir($uploadDir)) {
@@ -70,9 +73,9 @@ class AttachmentController extends AbstractController
 
         $attachment = new Attachment();
         $attachment->setFilename($filename);
-        $attachment->setOriginalName($file->getClientOriginalName());
-        $attachment->setMimeType($file->getClientMimeType());
-        $attachment->setSize($file->getSize());
+        $attachment->setOriginalName($originalName);
+        $attachment->setMimeType($mimeType);
+        $attachment->setSize($size);
         $attachment->setUploadedBy($user);
         $attachment->setTicket($ticket);
 
@@ -118,6 +121,9 @@ class AttachmentController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
         $filename = bin2hex(random_bytes(16)) . '.' . ($file->guessExtension() ?? 'bin');
+        $originalName = $file->getClientOriginalName();
+        $mimeType = $file->getClientMimeType();
+        $size = $file->getSize();
         $uploadDir = $this->getUploadDir();
 
         if (!is_dir($uploadDir)) {
@@ -128,9 +134,9 @@ class AttachmentController extends AbstractController
 
         $attachment = new Attachment();
         $attachment->setFilename($filename);
-        $attachment->setOriginalName($file->getClientOriginalName());
-        $attachment->setMimeType($file->getClientMimeType());
-        $attachment->setSize($file->getSize());
+        $attachment->setOriginalName($originalName);
+        $attachment->setMimeType($mimeType);
+        $attachment->setSize($size);
         $attachment->setUploadedBy($user);
         $attachment->setComment($comment);
 

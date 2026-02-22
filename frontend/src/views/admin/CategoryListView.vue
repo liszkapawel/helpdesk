@@ -84,7 +84,7 @@ onMounted(load)
         <Column field="name" header="Nazwa" />
         <Column field="description" header="Opis">
           <template #body="{ data }">
-            {{ data.description || '—' }}
+            {{ data.description || '-' }}
           </template>
         </Column>
         <Column header="Akcje" style="width: 120px">

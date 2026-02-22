@@ -30,6 +30,7 @@ const orgStore = useOrganizationStore()
         <router-link to="/" class="text-sm text-surface-600 hover:text-surface-900 no-underline">Strona</router-link>
         <router-link to="/submit" class="text-sm text-surface-600 hover:text-surface-900 no-underline">Zgłoś problem</router-link>
         <router-link to="/track" class="text-sm text-surface-600 hover:text-surface-900 no-underline">Sprawdź status</router-link>
+        <router-link to="/faq" class="text-sm text-surface-600 hover:text-surface-900 no-underline">FAQ</router-link>
         <router-link to="/login" class="text-sm text-surface-600 hover:text-surface-900 no-underline">Zaloguj się</router-link>
       </nav>
     </header>

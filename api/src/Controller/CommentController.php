@@ -63,7 +63,7 @@ class CommentController extends AbstractController
             content: new OA\JsonContent(
                 required: ['content'],
                 properties: [
-                    new OA\Property(property: 'content', type: 'string', example: 'Sprawdziłem — problem rozwiązany'),
+                    new OA\Property(property: 'content', type: 'string', example: 'Sprawdziłem - problem rozwiązany'),
                 ]
             )
         ),
@@ -102,6 +102,12 @@ class CommentController extends AbstractController
                 $messages[$error->getPropertyPath()] = $error->getMessage();
             }
             return $this->json(['errors' => $messages], 422);
+        }
+
+        // Set firstResponseAt when agent/admin comments for the first time
+        if ($ticket->getFirstResponseAt() === null &&
+            (in_array('ROLE_ADMIN', $user->getRoles()) || in_array('ROLE_AGENT', $user->getRoles()))) {
+            $ticket->setFirstResponseAt(new \DateTimeImmutable());
         }
 
         $em->persist($comment);

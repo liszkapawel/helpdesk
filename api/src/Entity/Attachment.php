@@ -31,7 +31,6 @@ class Attachment
     private int $size = 0;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(nullable: false)]
     #[Groups(['attachment:read'])]
     private ?User $uploadedBy = null;
 

@@ -19,6 +19,8 @@ const navItems = computed(() => {
   if (auth.isAdmin) {
     items.push({ label: 'Użytkownicy', icon: 'pi pi-users', to: '/admin/users' })
     items.push({ label: 'Kategorie', icon: 'pi pi-tags', to: '/admin/categories' })
+    items.push({ label: 'SLA', icon: 'pi pi-clock', to: '/admin/sla' })
+    items.push({ label: 'FAQ', icon: 'pi pi-book', to: '/admin/faq' })
     items.push({ label: 'Ustawienia', icon: 'pi pi-cog', to: '/settings' })
   }
   return items

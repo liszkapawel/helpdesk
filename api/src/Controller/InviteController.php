@@ -103,7 +103,7 @@ class InviteController extends AbstractController
     #[Route('/api/invites/{code}/validate', methods: ['GET'])]
     #[OA\Get(
         summary: 'Walidacja kodu zaproszenia',
-        description: 'Publiczny endpoint — nie wymaga autoryzacji',
+        description: 'Publiczny endpoint - nie wymaga autoryzacji',
         parameters: [
             new OA\Parameter(name: 'code', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ],

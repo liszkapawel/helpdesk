@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,7 +22,7 @@ class DashboardController extends AbstractController
             new OA\Response(response: 200, description: 'Statystyki'),
         ]
     )]
-    public function stats(TicketRepository $ticketRepo, UserRepository $userRepo): JsonResponse
+    public function stats(TicketRepository $ticketRepo, UserRepository $userRepo, EntityManagerInterface $em): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -32,12 +33,20 @@ class DashboardController extends AbstractController
         $avgResolution = $ticketRepo->avgResolutionTime($user);
         $total = $ticketRepo->countByUserRole($user);
 
+        // Average satisfaction rating
+        $conn = $em->getConnection();
+        $avgSatisfaction = $conn->fetchOne(
+            'SELECT AVG(sr.rating) FROM satisfaction_rating sr JOIN ticket t ON sr.ticket_id = t.id WHERE t.organization_id = :org',
+            ['org' => $user->getOrganization()->getId()]
+        );
+
         $response = [
             'total' => $total,
             'byStatus' => $byStatus,
             'byPriority' => $byPriority,
             'overTime' => $overTime,
             'avgResolutionHours' => $avgResolution,
+            'avgSatisfaction' => $avgSatisfaction !== null && $avgSatisfaction !== false ? round((float) $avgSatisfaction, 1) : null,
         ];
 
         // Per-agent stats only for admin/agent

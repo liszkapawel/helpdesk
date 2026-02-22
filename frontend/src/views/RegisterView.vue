@@ -149,7 +149,7 @@ async function submit() {
       </div>
     </div>
 
-    <!-- Right panel — form -->
+    <!-- Right panel - form -->
     <div class="flex-1 flex items-center justify-center p-6">
       <div class="w-full max-w-sm">
         <div class="flex items-center gap-2 mb-8 lg:hidden">

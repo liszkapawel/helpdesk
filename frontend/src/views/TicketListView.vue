@@ -302,7 +302,18 @@ onMounted(() => {
             <p>Brak ticketów spełniających kryteria</p>
           </div>
         </template>
-        <Column field="id" header="#" style="width: 60px" />
+        <Column field="id" header="#" style="width: 80px">
+          <template #body="{ data }">
+            <div class="flex items-center gap-1.5">
+              <span>{{ data.id }}</span>
+              <i
+                v-if="data.slaResponseBreached || data.slaResolutionBreached"
+                class="pi pi-exclamation-circle text-red-500 text-xs"
+                v-tooltip.top="'SLA przekroczone'"
+              ></i>
+            </div>
+          </template>
+        </Column>
         <Column field="title" header="Tytuł" />
         <Column field="status" header="Status" style="width: 130px">
           <template #body="{ data }">
@@ -316,13 +327,13 @@ onMounted(() => {
         </Column>
         <Column header="Kategoria" style="width: 150px">
           <template #body="{ data }">
-            {{ data.category?.name || '—' }}
+            {{ data.category?.name || '-' }}
           </template>
         </Column>
         <Column header="Przypisany" style="width: 180px">
           <template #body="{ data }">
             <span v-if="data.assignedTo">{{ data.assignedTo.firstName }} {{ data.assignedTo.lastName }}</span>
-            <span v-else class="text-surface-400">—</span>
+            <span v-else class="text-surface-400">-</span>
           </template>
         </Column>
         <Column field="createdAt" header="Utworzony" style="width: 130px">

@@ -2,10 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\SatisfactionRating;
 use App\Entity\Ticket;
 use App\Entity\User;
 use App\Enum\TicketPriority;
 use App\Enum\TicketStatus;
+use App\Repository\SlaPolicyRepository;
 use App\Repository\TicketRepository;
 use App\Service\AuditService;
 use App\Service\NotificationService;
@@ -15,6 +17,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[OA\Tag(name: 'Tickety')]
@@ -24,7 +27,63 @@ class TicketController extends AbstractController
     public function __construct(
         private AuditService $audit,
         private NotificationService $notifications,
+        private SlaPolicyRepository $slaRepo,
+        private SerializerInterface $serializer,
     ) {
+    }
+
+    private function computeSlaInfo(Ticket $ticket): array
+    {
+        $policy = $this->slaRepo->findOneByOrgAndPriority(
+            $ticket->getOrganization(),
+            $ticket->getPriority(),
+        );
+
+        if (!$policy) {
+            return [];
+        }
+
+        $createdAt = $ticket->getCreatedAt();
+        $responseDeadline = $createdAt->modify('+' . $policy->getResponseHours() . ' hours');
+        $resolutionDeadline = $createdAt->modify('+' . $policy->getResolutionHours() . ' hours');
+        $now = new \DateTimeImmutable();
+
+        $responseBreached = $ticket->getFirstResponseAt()
+            ? $ticket->getFirstResponseAt() > $responseDeadline
+            : $now > $responseDeadline;
+
+        $resolutionBreached = ($ticket->getClosedAt()
+            ? $ticket->getClosedAt() > $resolutionDeadline
+            : $now > $resolutionDeadline);
+
+        return [
+            'slaResponseDeadline' => $responseDeadline->format('c'),
+            'slaResolutionDeadline' => $resolutionDeadline->format('c'),
+            'slaResponseBreached' => $responseBreached,
+            'slaResolutionBreached' => $resolutionBreached,
+            'slaResponseHours' => $policy->getResponseHours(),
+            'slaResolutionHours' => $policy->getResolutionHours(),
+        ];
+    }
+
+    private function ticketResponse(Ticket $ticket, int $status = 200, array $groups = ['ticket:read', 'user:read', 'comment:read', 'category:read', 'attachment:read', 'rating:read']): JsonResponse
+    {
+        $data = json_decode($this->serializer->serialize($ticket, 'json', ['groups' => $groups]), true);
+        $data = array_merge($data, $this->computeSlaInfo($ticket));
+
+        return $this->json($data, $status);
+    }
+
+    private function ticketListResponse(array $tickets): array
+    {
+        $groups = ['ticket:list', 'user:read', 'category:read'];
+        $result = [];
+        foreach ($tickets as $ticket) {
+            $data = json_decode($this->serializer->serialize($ticket, 'json', ['groups' => $groups]), true);
+            $data = array_merge($data, $this->computeSlaInfo($ticket));
+            $result[] = $data;
+        }
+        return $result;
     }
 
     #[Route('', methods: ['GET'])]
@@ -73,13 +132,13 @@ class TicketController extends AbstractController
         $tickets = $repo->findByUserRole($user, $limit, $offset, $filters, $sortField, $sortOrder);
 
         return $this->json([
-            'data' => $tickets,
+            'data' => $this->ticketListResponse($tickets),
             'meta' => [
                 'page' => $page,
                 'limit' => $limit,
                 'total' => $total,
             ],
-        ], 200, [], ['groups' => ['ticket:list', 'user:read', 'category:read']]);
+        ]);
     }
 
     #[Route('', methods: ['POST'])]
@@ -151,12 +210,7 @@ class TicketController extends AbstractController
         ], $user);
         $em->flush();
 
-        return $this->json(
-            $ticket,
-            201,
-            [],
-            ['groups' => ['ticket:read', 'user:read', 'comment:read', 'category:read', 'attachment:read']],
-        );
+        return $this->ticketResponse($ticket, 201);
     }
 
     #[Route('/{id}', methods: ['GET'])]
@@ -172,12 +226,7 @@ class TicketController extends AbstractController
     )]
     public function show(Ticket $ticket): JsonResponse
     {
-        return $this->json(
-            $ticket,
-            200,
-            [],
-            ['groups' => ['ticket:read', 'user:read', 'comment:read', 'category:read', 'attachment:read']],
-        );
+        return $this->ticketResponse($ticket);
     }
 
     #[Route('/{id}', methods: ['PUT'])]
@@ -282,6 +331,12 @@ class TicketController extends AbstractController
             return $this->json(['errors' => $messages], 422);
         }
 
+        // Set firstResponseAt when agent/admin responds for the first time
+        if ($ticket->getFirstResponseAt() === null && !empty($changes) &&
+            (in_array('ROLE_ADMIN', $user->getRoles()) || in_array('ROLE_AGENT', $user->getRoles()))) {
+            $ticket->setFirstResponseAt(new \DateTimeImmutable());
+        }
+
         // Audit & notifications
         if (!empty($changes)) {
             $this->audit->log('ticket', $ticket->getId(), 'updated', $changes, $user);
@@ -295,12 +350,47 @@ class TicketController extends AbstractController
 
         $em->flush();
 
-        return $this->json(
-            $ticket,
-            200,
-            [],
-            ['groups' => ['ticket:read', 'user:read', 'comment:read', 'category:read', 'attachment:read']],
-        );
+        return $this->ticketResponse($ticket);
+    }
+
+    #[Route('/{id}/rate', methods: ['POST'])]
+    public function rate(Ticket $ticket, Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        // Only owner can rate
+        if ($ticket->getCreatedBy()?->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Only ticket owner can rate'], 403);
+        }
+
+        // Only resolved/closed tickets
+        if (!in_array($ticket->getStatus(), [TicketStatus::RESOLVED, TicketStatus::CLOSED])) {
+            return $this->json(['error' => 'Ticket must be resolved or closed'], 400);
+        }
+
+        // Only once
+        if ($ticket->getSatisfactionRating()) {
+            return $this->json(['error' => 'Already rated'], 400);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $ratingValue = (int) ($data['rating'] ?? 0);
+        if ($ratingValue < 1 || $ratingValue > 5) {
+            return $this->json(['error' => 'Rating must be between 1 and 5'], 422);
+        }
+
+        $rating = new SatisfactionRating();
+        $rating->setTicket($ticket);
+        $rating->setRating($ratingValue);
+        if (!empty($data['comment'])) {
+            $rating->setComment($data['comment']);
+        }
+
+        $em->persist($rating);
+        $em->flush();
+
+        return $this->json($rating, 201, [], ['groups' => ['rating:read']]);
     }
 
     #[Route('/{id}', methods: ['DELETE'])]

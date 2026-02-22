@@ -2,8 +2,10 @@
 
 namespace App\Controller;
 
+use App\Entity\Attachment;
 use App\Entity\Ticket;
 use App\Enum\TicketPriority;
+use App\Repository\FaqArticleRepository;
 use App\Repository\OrganizationRepository;
 use App\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,7 +22,7 @@ class PublicPortalController extends AbstractController
     #[Route('/org/{slug}', methods: ['GET'])]
     #[OA\Get(
         summary: 'Informacje o organizacji',
-        description: 'Publiczny endpoint — bez autoryzacji. Zwraca dane organizacji widoczne na portalu',
+        description: 'Publiczny endpoint - bez autoryzacji. Zwraca dane organizacji widoczne na portalu',
         parameters: [
             new OA\Parameter(name: 'slug', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ],
@@ -49,7 +51,7 @@ class PublicPortalController extends AbstractController
     #[Route('/tickets', methods: ['POST'])]
     #[OA\Post(
         summary: 'Zgłoś ticket (publiczny)',
-        description: 'Publiczny endpoint — bez autoryzacji. Wymaga nagłówka X-Org-Slug',
+        description: 'Publiczny endpoint - bez autoryzacji. Wymaga nagłówka X-Org-Slug',
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -65,7 +67,7 @@ class PublicPortalController extends AbstractController
             )
         ),
         responses: [
-            new OA\Response(response: 201, description: 'Ticket utworzony — zwraca ticketId i trackingToken'),
+            new OA\Response(response: 201, description: 'Ticket utworzony - zwraca ticketId i trackingToken'),
             new OA\Response(response: 400, description: 'Brak X-Org-Slug'),
             new OA\Response(response: 404, description: 'Organizacja nie znaleziona'),
             new OA\Response(response: 422, description: 'Brakujące pola'),
@@ -128,7 +130,7 @@ class PublicPortalController extends AbstractController
     #[Route('/tickets/track', methods: ['POST'])]
     #[OA\Post(
         summary: 'Sprawdź status ticketa',
-        description: 'Publiczny endpoint — bez autoryzacji. Wyszukuje ticket po email i ID',
+        description: 'Publiczny endpoint - bez autoryzacji. Wyszukuje ticket po email i ID',
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -174,10 +176,54 @@ class PublicPortalController extends AbstractController
         ]);
     }
 
+    #[Route('/tickets/{ticketId}/attachments', methods: ['POST'])]
+    public function uploadAttachment(int $ticketId, Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $ticket = $em->getRepository(Ticket::class)->find($ticketId);
+        if (!$ticket) {
+            return $this->json(['error' => 'Ticket not found'], 404);
+        }
+
+        // Verify by tracking token
+        $token = $request->headers->get('X-Tracking-Token');
+        if (!$token || $ticket->getTrackingToken() !== $token) {
+            return $this->json(['error' => 'Invalid tracking token'], 403);
+        }
+
+        $file = $request->files->get('file');
+        if (!$file) {
+            return $this->json(['error' => 'No file uploaded'], 400);
+        }
+
+        $uploadDir = $this->getParameter('kernel.project_dir') . '/var/uploads';
+        $filename = bin2hex(random_bytes(16)) . '.' . ($file->guessExtension() ?? 'bin');
+        $originalName = $file->getClientOriginalName();
+        $mimeType = $file->getClientMimeType();
+        $size = $file->getSize();
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $file->move($uploadDir, $filename);
+
+        $attachment = new Attachment();
+        $attachment->setFilename($filename);
+        $attachment->setOriginalName($originalName);
+        $attachment->setMimeType($mimeType);
+        $attachment->setSize($size);
+        $attachment->setTicket($ticket);
+
+        $em->persist($attachment);
+        $em->flush();
+
+        return $this->json($attachment, 201, [], ['groups' => ['attachment:read']]);
+    }
+
     #[Route('/check-slug/{slug}', methods: ['GET'])]
     #[OA\Get(
         summary: 'Sprawdź dostępność slug',
-        description: 'Publiczny endpoint — bez autoryzacji',
+        description: 'Publiczny endpoint - bez autoryzacji',
         parameters: [
             new OA\Parameter(name: 'slug', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ],
@@ -194,10 +240,23 @@ class PublicPortalController extends AbstractController
         return $this->json(['available' => $available]);
     }
 
+    #[Route('/org/{slug}/faq', methods: ['GET'])]
+    public function orgFaq(string $slug, OrganizationRepository $orgRepo, FaqArticleRepository $faqRepo): JsonResponse
+    {
+        $org = $orgRepo->findOneBy(['slug' => $slug]);
+        if (!$org) {
+            return $this->json(['error' => 'Organization not found'], 404);
+        }
+
+        $articles = $faqRepo->findByOrganization($org, true);
+
+        return $this->json($articles, 200, [], ['groups' => ['faq:read']]);
+    }
+
     #[Route('/org/{slug}/categories', methods: ['GET'])]
     #[OA\Get(
         summary: 'Kategorie organizacji',
-        description: 'Publiczny endpoint — bez autoryzacji',
+        description: 'Publiczny endpoint - bez autoryzacji',
         parameters: [
             new OA\Parameter(name: 'slug', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ],

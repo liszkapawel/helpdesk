@@ -34,7 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
       const { data } = await api.get('/me')
       user.value = data
     } catch {
-      // don't logout — token may still be valid, /me might just be temporarily unavailable
+      // don't logout - token may still be valid, /me might just be temporarily unavailable
     }
   }
 

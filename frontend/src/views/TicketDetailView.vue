@@ -8,7 +8,8 @@ import Textarea from 'primevue/textarea'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Dialog from 'primevue/dialog'
-import TicketHistory from '@/components/TicketHistory.vue'
+import Rating from 'primevue/rating'
+import TicketTimeline from '@/components/TicketTimeline.vue'
 import FileUpload from '@/components/FileUpload.vue'
 import AttachmentList from '@/components/AttachmentList.vue'
 import api from '@/services/api'
@@ -30,6 +31,11 @@ const categories = ref<any[]>([])
 const agents = ref<any[]>([])
 const editLoading = ref(false)
 const deleteDialog = ref(false)
+
+// Satisfaction rating
+const ratingValue = ref(0)
+const ratingComment = ref('')
+const ratingLoading = ref(false)
 
 const statuses = [
   { label: 'Nowy', value: 'new' },
@@ -63,6 +69,53 @@ const canEdit = computed(() => isOwner.value || auth.isAgentOrAdmin)
 const canDelete = computed(() => isOwner.value || auth.isAdmin)
 const canAssign = computed(() => auth.isAgentOrAdmin)
 const canDeleteComment = (comment: any) => comment.author?.id === auth.user?.id || auth.isAgentOrAdmin
+
+// SLA computed
+const hasSla = computed(() => ticket.value?.slaResponseDeadline)
+const slaResponseStatus = computed(() => {
+  if (!hasSla.value) return null
+  if (ticket.value.slaResponseBreached) return 'breached'
+  const deadline = new Date(ticket.value.slaResponseDeadline).getTime()
+  const created = new Date(ticket.value.createdAt).getTime()
+  const now = Date.now()
+  const total = deadline - created
+  const elapsed = now - created
+  if (elapsed / total > 0.75) return 'warning'
+  return 'ok'
+})
+const slaResolutionStatus = computed(() => {
+  if (!hasSla.value) return null
+  if (ticket.value.slaResolutionBreached) return 'breached'
+  const deadline = new Date(ticket.value.slaResolutionDeadline).getTime()
+  const created = new Date(ticket.value.createdAt).getTime()
+  const now = Date.now()
+  const total = deadline - created
+  const elapsed = now - created
+  if (elapsed / total > 0.75) return 'warning'
+  return 'ok'
+})
+
+function slaColor(status: string | null) {
+  if (status === 'breached') return 'text-red-600 bg-red-50'
+  if (status === 'warning') return 'text-amber-600 bg-amber-50'
+  return 'text-green-600 bg-green-50'
+}
+
+function timeLeft(deadline: string) {
+  const diff = new Date(deadline).getTime() - Date.now()
+  if (diff <= 0) return 'Przekroczono'
+  const hours = Math.floor(diff / 3600000)
+  const minutes = Math.floor((diff % 3600000) / 60000)
+  if (hours > 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`
+  return `${hours}h ${minutes}m`
+}
+
+// Satisfaction
+const canRate = computed(() =>
+  isOwner.value &&
+  ['resolved', 'closed'].includes(ticket.value?.status) &&
+  !ticket.value?.satisfactionRating
+)
 
 async function loadTicket() {
   loading.value = true
@@ -155,6 +208,23 @@ async function deleteComment(commentId: number) {
   }
 }
 
+async function submitRating() {
+  if (!ratingValue.value) return
+  ratingLoading.value = true
+  try {
+    const { data } = await api.post(`/tickets/${ticket.value.id}/rate`, {
+      rating: ratingValue.value,
+      comment: ratingComment.value || undefined,
+    })
+    ticket.value.satisfactionRating = data
+    toast.add({ severity: 'success', summary: 'Dziękujemy', detail: 'Ocena została zapisana', life: 3000 })
+  } catch {
+    toast.add({ severity: 'error', summary: 'Błąd', detail: 'Nie udało się zapisać oceny', life: 3000 })
+  } finally {
+    ratingLoading.value = false
+  }
+}
+
 function onAttachmentUploaded(att: any) {
   if (!ticket.value.attachments) ticket.value.attachments = []
   ticket.value.attachments.push(att)
@@ -212,6 +282,26 @@ onMounted(loadTicket)
       </div>
     </div>
 
+    <!-- SLA Indicators (agents/admins only) -->
+    <div v-if="hasSla && auth.isAgentOrAdmin" class="bg-surface-0 rounded-xl border border-surface-200 p-4 mb-6">
+      <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
+        <i class="pi pi-clock text-surface-400"></i>
+        SLA
+      </h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="rounded-lg p-3" :class="slaColor(slaResponseStatus)">
+          <div class="text-xs font-medium mb-1">Czas reakcji</div>
+          <div class="text-lg font-bold">{{ timeLeft(ticket.slaResponseDeadline) }}</div>
+          <div class="text-xs mt-1">Limit: {{ ticket.slaResponseHours }}h</div>
+        </div>
+        <div class="rounded-lg p-3" :class="slaColor(slaResolutionStatus)">
+          <div class="text-xs font-medium mb-1">Czas rozwiązania</div>
+          <div class="text-lg font-bold">{{ timeLeft(ticket.slaResolutionDeadline) }}</div>
+          <div class="text-xs mt-1">Limit: {{ ticket.slaResolutionHours }}h</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Edit form -->
     <div v-if="editing" class="bg-surface-0 rounded-xl border border-surface-200 p-6 mb-6">
       <h2 class="font-semibold mb-4">Edytuj ticket</h2>
@@ -265,36 +355,50 @@ onMounted(loadTicket)
       <div v-if="!ticket.attachments?.length" class="text-surface-400 text-sm">Brak załączników</div>
     </div>
 
-    <!-- Comments -->
-    <div class="bg-surface-0 rounded-xl border border-surface-200 p-6 mb-6">
-      <h2 class="font-semibold mb-4">Komentarze ({{ ticket.comments?.length || 0 }})</h2>
-
-      <div v-for="comment in ticket.comments" :key="comment.id" class="border border-surface-200 rounded-lg p-4 mb-3">
-        <div class="flex justify-between items-start">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-full bg-surface-100 flex items-center justify-center">
-              <span class="text-xs font-semibold text-surface-500">{{ comment.author?.firstName?.[0] }}{{ comment.author?.lastName?.[0] }}</span>
-            </div>
-            <span class="font-medium text-sm">{{ comment.author?.firstName }} {{ comment.author?.lastName }}</span>
-            <span class="text-xs text-surface-400">{{ new Date(comment.createdAt).toLocaleString('pl-PL') }}</span>
-          </div>
-          <Button v-if="canDeleteComment(comment)" icon="pi pi-trash" text severity="danger" size="small" @click="deleteComment(comment.id)" />
+    <!-- Satisfaction Rating - show form or existing rating -->
+    <div v-if="canRate" class="bg-surface-0 rounded-xl border border-green-200 p-6 mb-6">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i class="pi pi-star text-amber-500"></i>
+        Oceń obsługę
+      </h2>
+      <p class="text-sm text-surface-500 mb-4">Jak oceniasz jakość obsługi tego zgłoszenia?</p>
+      <div class="flex flex-col gap-3">
+        <Rating v-model="ratingValue" :cancel="false" />
+        <Textarea v-model="ratingComment" placeholder="Opcjonalny komentarz..." rows="2" />
+        <div>
+          <Button
+            label="Wyślij ocenę"
+            icon="pi pi-check"
+            :loading="ratingLoading"
+            :disabled="!ratingValue"
+            @click="submitRating"
+          />
         </div>
-        <p class="mt-2 whitespace-pre-wrap text-sm text-surface-700">{{ comment.content }}</p>
       </div>
+    </div>
 
-      <div v-if="!ticket.comments?.length" class="text-surface-400 text-sm mb-4">Brak komentarzy</div>
+    <div v-if="ticket.satisfactionRating" class="bg-surface-0 rounded-xl border border-surface-200 p-6 mb-6">
+      <h2 class="font-semibold mb-3 flex items-center gap-2">
+        <i class="pi pi-star-fill text-amber-500"></i>
+        Ocena obsługi
+      </h2>
+      <Rating :model-value="ticket.satisfactionRating.rating" :cancel="false" readonly />
+      <p v-if="ticket.satisfactionRating.comment" class="text-sm text-surface-600 mt-2">{{ ticket.satisfactionRating.comment }}</p>
+    </div>
 
-      <form class="flex gap-3 mt-4" @submit.prevent="addComment">
+    <!-- Timeline (merged comments + history) -->
+    <div class="bg-surface-0 rounded-xl border border-surface-200 p-6 mb-6">
+      <h2 class="font-semibold mb-4">Oś czasu</h2>
+      <TicketTimeline
+        :ticket-id="ticket.id"
+        :comments="ticket.comments || []"
+        @delete-comment="deleteComment"
+      />
+
+      <form class="flex gap-3 mt-6 pt-4 border-t border-surface-200" @submit.prevent="addComment">
         <Textarea v-model="commentContent" placeholder="Napisz komentarz..." rows="2" class="flex-1" />
         <Button type="submit" label="Wyślij" icon="pi pi-send" :loading="commentLoading" :disabled="!commentContent.trim()" />
       </form>
-    </div>
-
-    <!-- History -->
-    <div class="bg-surface-0 rounded-xl border border-surface-200 p-6">
-      <h2 class="font-semibold mb-4">Historia zmian</h2>
-      <TicketHistory :ticket-id="ticket.id" />
     </div>
 
     <!-- Delete dialog -->

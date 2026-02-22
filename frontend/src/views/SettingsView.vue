@@ -202,7 +202,7 @@ onMounted(() => {
         </Column>
         <Column field="email" header="Email">
           <template #body="{ data }">
-            {{ data.email || '—' }}
+            {{ data.email || '-' }}
           </template>
         </Column>
         <Column header="Status" style="width: 130px">

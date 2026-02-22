@@ -6,6 +6,7 @@ import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
 import Button from 'primevue/button'
+import FileUploadPrime from 'primevue/fileupload'
 import api from '@/services/api'
 import { getOrgSlug } from '@/utils/subdomain'
 
@@ -20,6 +21,7 @@ const priority = ref('medium')
 const categoryId = ref<number | null>(null)
 const categories = ref<any[]>([])
 const loading = ref(false)
+const pendingFiles = ref<File[]>([])
 
 const priorities = [
   { label: 'Niski', value: 'low' },
@@ -40,6 +42,20 @@ onMounted(async () => {
   }
 })
 
+function onSelectFiles(event: any) {
+  pendingFiles.value = [...pendingFiles.value, ...event.files]
+}
+
+function removeFile(index: number) {
+  pendingFiles.value.splice(index, 1)
+}
+
+function formatSize(bytes: number) {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / 1048576).toFixed(1) + ' MB'
+}
+
 async function submit() {
   if (!name.value || !email.value || !title.value || !description.value) {
     toast.add({ severity: 'warn', summary: 'Uwaga', detail: 'Wypełnij wszystkie wymagane pola', life: 3000 })
@@ -55,6 +71,23 @@ async function submit() {
       priority: priority.value,
       category: categoryId.value,
     })
+
+    // Upload pending files using tracking token
+    for (const file of pendingFiles.value) {
+      const formData = new FormData()
+      formData.append('file', file)
+      try {
+        await api.post(`/public/tickets/${data.ticketId}/attachments`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'X-Tracking-Token': data.trackingToken,
+          },
+        })
+      } catch {
+        toast.add({ severity: 'warn', summary: 'Uwaga', detail: `Nie udało się przesłać: ${file.name}`, life: 5000 })
+      }
+    }
+
     router.push({
       path: '/submit/success',
       query: { ticketId: data.ticketId, token: data.trackingToken },
@@ -102,6 +135,35 @@ async function submit() {
           <div v-if="categories.length" class="flex flex-col gap-1 flex-1">
             <label class="text-sm font-medium">Kategoria</label>
             <Select v-model="categoryId" :options="categories" optionLabel="name" optionValue="id" placeholder="Wybierz..." class="w-full" />
+          </div>
+        </div>
+
+        <!-- Attachments -->
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium">Załączniki</label>
+          <FileUploadPrime
+            mode="basic"
+            :auto="false"
+            :multiple="true"
+            :custom-upload="true"
+            @select="onSelectFiles"
+            choose-label="Dodaj pliki"
+            choose-icon="pi pi-paperclip"
+            class="p-button-sm p-button-outlined p-button-secondary"
+          />
+          <div v-if="pendingFiles.length" class="flex flex-col gap-2 mt-1">
+            <div
+              v-for="(file, index) in pendingFiles"
+              :key="index"
+              class="flex items-center justify-between border border-surface-200 rounded-lg px-3 py-2"
+            >
+              <div class="flex items-center gap-2 min-w-0">
+                <i class="pi pi-file text-surface-400 text-sm"></i>
+                <span class="text-sm truncate">{{ file.name }}</span>
+                <span class="text-xs text-surface-400">({{ formatSize(file.size) }})</span>
+              </div>
+              <Button icon="pi pi-times" text severity="danger" size="small" @click="removeFile(index)" />
+            </div>
           </div>
         </div>
       </div>

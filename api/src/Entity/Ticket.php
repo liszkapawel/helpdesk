@@ -52,6 +52,14 @@ class Ticket
     #[Groups(['ticket:read'])]
     private ?\DateTimeImmutable $closedAt = null;
 
+    #[ORM\Column(nullable: true)]
+    #[Groups(['ticket:read'])]
+    private ?\DateTimeImmutable $firstResponseAt = null;
+
+    #[ORM\OneToOne(targetEntity: SatisfactionRating::class, mappedBy: 'ticket', cascade: ['remove'])]
+    #[Groups(['ticket:read'])]
+    private ?SatisfactionRating $satisfactionRating = null;
+
     #[ORM\ManyToOne(targetEntity: Organization::class, inversedBy: 'tickets')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Organization $organization = null;
@@ -258,6 +266,28 @@ class Ticket
     public function setTrackingToken(?string $trackingToken): static
     {
         $this->trackingToken = $trackingToken;
+        return $this;
+    }
+
+    public function getFirstResponseAt(): ?\DateTimeImmutable
+    {
+        return $this->firstResponseAt;
+    }
+
+    public function setFirstResponseAt(?\DateTimeImmutable $firstResponseAt): static
+    {
+        $this->firstResponseAt = $firstResponseAt;
+        return $this;
+    }
+
+    public function getSatisfactionRating(): ?SatisfactionRating
+    {
+        return $this->satisfactionRating;
+    }
+
+    public function setSatisfactionRating(?SatisfactionRating $satisfactionRating): static
+    {
+        $this->satisfactionRating = $satisfactionRating;
         return $this;
     }
 }

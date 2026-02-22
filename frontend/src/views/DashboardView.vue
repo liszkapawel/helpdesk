@@ -96,7 +96,7 @@ onMounted(loadStats)
 
     <div v-else-if="stats">
       <!-- Metric Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div class="bg-surface-0 rounded-xl border border-surface-200 p-5">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -125,8 +125,19 @@ onMounted(loadStats)
               <i class="pi pi-clock text-green-500"></i>
             </div>
             <div>
-              <div class="text-2xl font-bold">{{ stats.avgResolutionHours ?? '—' }}h</div>
+              <div class="text-2xl font-bold">{{ stats.avgResolutionHours ?? '-' }}h</div>
               <div class="text-surface-500 text-sm">Śr. czas rozwiązania</div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-surface-0 rounded-xl border border-surface-200 p-5">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+              <i class="pi pi-star-fill text-amber-500"></i>
+            </div>
+            <div>
+              <div class="text-2xl font-bold">{{ stats.avgSatisfaction ?? '-' }}<span v-if="stats.avgSatisfaction" class="text-sm font-normal text-surface-400">/5</span></div>
+              <div class="text-surface-500 text-sm">Średnia ocena</div>
             </div>
           </div>
         </div>
