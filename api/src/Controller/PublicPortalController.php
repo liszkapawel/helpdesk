@@ -177,6 +177,19 @@ class PublicPortalController extends AbstractController
     }
 
     #[Route('/tickets/{ticketId}/attachments', methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Dodaj załącznik do ticketa (publiczny)',
+        description: 'Publiczny endpoint - wymaga nagłówka X-Tracking-Token zamiast autoryzacji JWT',
+        parameters: [
+            new OA\Parameter(name: 'ticketId', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        responses: [
+            new OA\Response(response: 201, description: 'Załącznik dodany'),
+            new OA\Response(response: 400, description: 'Brak pliku'),
+            new OA\Response(response: 403, description: 'Nieprawidłowy tracking token'),
+            new OA\Response(response: 404, description: 'Ticket nie znaleziony'),
+        ]
+    )]
     public function uploadAttachment(int $ticketId, Request $request, EntityManagerInterface $em): JsonResponse
     {
         $ticket = $em->getRepository(Ticket::class)->find($ticketId);
@@ -241,6 +254,17 @@ class PublicPortalController extends AbstractController
     }
 
     #[Route('/org/{slug}/faq', methods: ['GET'])]
+    #[OA\Get(
+        summary: 'FAQ organizacji',
+        description: 'Publiczny endpoint - bez autoryzacji. Zwraca opublikowane artykuły FAQ',
+        parameters: [
+            new OA\Parameter(name: 'slug', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Lista artykułów FAQ'),
+            new OA\Response(response: 404, description: 'Organizacja nie znaleziona'),
+        ]
+    )]
     public function orgFaq(string $slug, OrganizationRepository $orgRepo, FaqArticleRepository $faqRepo): JsonResponse
     {
         $org = $orgRepo->findOneBy(['slug' => $slug]);
