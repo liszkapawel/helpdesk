@@ -153,6 +153,9 @@ function openTicket(event: any) {
 
 async function loadFilterOptions() {
   try {
+    if (!auth.user && auth.token) {
+      await auth.fetchUser()
+    }
     const [catRes, agentRes] = await Promise.all([
       api.get('/categories'),
       auth.isAgentOrAdmin ? api.get('/admin/agents') : Promise.resolve({ data: [] }),
