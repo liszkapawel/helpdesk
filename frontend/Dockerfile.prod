@@ -11,6 +11,5 @@ ENV VITE_BASE_DOMAIN=$VITE_BASE_DOMAIN
 RUN npm run build-only
 
 FROM alpine:latest
-COPY --from=build /app/dist /dist
-# Keep container running so volume stays mounted
-CMD ["sleep", "infinity"]
+COPY --from=build /app/dist /app/dist
+CMD ["sh", "-c", "cp -r /app/dist/. /dist/ && sleep infinity"]
