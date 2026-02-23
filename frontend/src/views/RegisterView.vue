@@ -120,8 +120,8 @@ async function submit() {
       mode.value === 'create' ? organizationName.value : undefined,
       mode.value === 'create' ? organizationSlug.value : undefined,
     )
-    toast.add({ severity: 'success', summary: 'Sukces', detail: 'Konto utworzone. Zaloguj się.', life: 3000 })
-    router.push('/login')
+    toast.add({ severity: 'success', summary: 'Sukces', detail: 'Konto utworzone. Zaloguj się na portalu swojej organizacji.', life: 5000 })
+    router.push('/')
   } catch (err: any) {
     const errors = err.response?.data?.errors
     const error = err.response?.data?.error
@@ -233,8 +233,7 @@ async function submit() {
             class="mt-2"
           />
           <p class="text-center text-sm text-surface-500">
-            Masz już konto?
-            <router-link to="/login" class="text-primary font-medium hover:underline">Zaloguj się</router-link>
+            Masz już konto? Zaloguj się na portalu swojej organizacji.
           </p>
         </form>
       </div>

@@ -20,9 +20,6 @@ const auth = useAuthStore()
           </router-link>
         </template>
         <template v-else>
-          <router-link to="/login">
-            <Button label="Zaloguj się" severity="secondary" text size="small" />
-          </router-link>
           <router-link to="/register">
             <Button label="Zarejestruj się" size="small" />
           </router-link>
@@ -52,9 +49,6 @@ const auth = useAuthStore()
         <template v-else>
           <router-link to="/register">
             <Button label="Rozpocznij za darmo" icon="pi pi-arrow-right" icon-pos="right" size="large" />
-          </router-link>
-          <router-link to="/login">
-            <Button label="Zaloguj się" severity="secondary" outlined size="large" />
           </router-link>
         </template>
       </div>

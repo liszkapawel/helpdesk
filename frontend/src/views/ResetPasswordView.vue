@@ -25,7 +25,7 @@ async function submit() {
   try {
     await api.post('/password-reset/confirm', { token, password: password.value })
     toast.add({ severity: 'success', summary: 'Sukces', detail: 'Hasło zostało zmienione', life: 3000 })
-    router.push('/login')
+    router.push('/')
   } catch (err: any) {
     const msg = err.response?.data?.error || 'Token jest nieprawidłowy lub wygasł'
     toast.add({ severity: 'error', summary: 'Błąd', detail: msg, life: 5000 })

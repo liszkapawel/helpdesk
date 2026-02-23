@@ -9,12 +9,6 @@ const mainRoutes = [
     meta: { public: true },
   },
   {
-    path: '/login',
-    name: 'login',
-    component: () => import('@/views/LoginView.vue'),
-    meta: { public: true },
-  },
-  {
     path: '/register',
     name: 'register',
     component: () => import('@/views/RegisterView.vue'),
@@ -195,7 +189,7 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const token = localStorage.getItem('token')
   if (!to.meta.public && !token) {
-    return '/login'
+    return orgSlug ? '/login' : '/'
   }
 })
 

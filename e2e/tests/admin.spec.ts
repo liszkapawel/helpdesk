@@ -32,19 +32,17 @@ test.describe('Admin', () => {
     await loginAs(page, TEST_ADMIN.email, TEST_ADMIN.password)
 
     await page.goto('/admin/categories')
+    await page.waitForLoadState('networkidle')
 
     const newCategoryName = 'E2E Kategoria ' + Date.now()
-    const nameInput = page.getByPlaceholder('Nowa kategoria')
-    if (await nameInput.isVisible()) {
-      await nameInput.fill(newCategoryName)
-      await page.getByRole('button', { name: 'Dodaj' }).click()
-      await expect(page.getByText(newCategoryName)).toBeVisible()
-    } else {
-      // Alternative UI — find add button
-      await page.getByRole('button', { name: /Dodaj|Nowa/ }).first().click()
-      await page.getByLabel('Nazwa').fill(newCategoryName)
-      await page.getByRole('button', { name: 'Zapisz' }).click()
-      await expect(page.getByText(newCategoryName)).toBeVisible()
-    }
+    await page.getByRole('button', { name: 'Nowa kategoria' }).click()
+
+    // Input inside the dialog (no placeholder) - find by role within dialog
+    const dialog = page.locator('.p-dialog')
+    await expect(dialog).toBeVisible()
+    await dialog.locator('input[type="text"]').first().fill(newCategoryName)
+    await dialog.getByRole('button', { name: 'Utwórz' }).click()
+
+    await expect(page.getByText(newCategoryName)).toBeVisible()
   })
 })

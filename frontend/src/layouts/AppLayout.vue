@@ -32,7 +32,7 @@ function isActive(to: string) {
 
 function logout() {
   auth.logout()
-  router.push('/login')
+  router.push('/')
 }
 </script>
 
