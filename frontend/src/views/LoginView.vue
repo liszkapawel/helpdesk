@@ -61,7 +61,10 @@ async function submit() {
             <InputText id="email" v-model="email" type="email" placeholder="jan@firma.pl" required />
           </div>
           <div class="flex flex-col gap-1.5">
-            <label for="password" class="text-sm font-medium">Hasło</label>
+            <div class="flex justify-between items-center">
+              <label for="password" class="text-sm font-medium">Hasło</label>
+              <router-link to="/forgot-password" class="text-xs text-primary hover:underline">Zapomniałeś hasła?</router-link>
+            </div>
             <Password id="password" v-model="password" placeholder="Twoje hasło" :feedback="false" toggle-mask required fluid />
           </div>
           <Button type="submit" label="Zaloguj się" :loading="loading" class="mt-2" />

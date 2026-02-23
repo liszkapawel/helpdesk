@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"><title>Zaproszenie</title></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <h2 style="color: #4f46e5;">Zaproszenie do {{ org.name }}</h2>
+  <p>Zostałeś zaproszony do organizacji <strong>{{ org.name }}</strong> w systemie Ticketerr.</p>
+  <p>Użyj poniższego kodu, aby dołączyć podczas rejestracji:</p>
+  <div style="background: #f5f5f5; padding: 15px; border-radius: 6px; font-size: 20px; letter-spacing: 2px; text-align: center;">
+    <strong>{{ invite.code }}</strong>
+  </div>
+  <p style="color: #666; font-size: 13px; margin-top: 20px;">Kod wygaśnie {{ invite.expiresAt|date('d.m.Y H:i') }}.</p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+  <p style="color: #999; font-size: 12px;">Ticketerr – system zarządzania zgłoszeniami</p>
+</body>
+</html>

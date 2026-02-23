@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"><title>Nowy komentarz</title></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <h2 style="color: #4f46e5;">Nowy komentarz do zgłoszenia #{{ ticket.id }}</h2>
+  <p>Zgłoszenie: <strong>{{ ticket.title }}</strong></p>
+  {% if comment.author %}
+  <p>Autor: {{ comment.author.firstName }} {{ comment.author.lastName }}</p>
+  {% endif %}
+  <div style="background: #f9f9f9; padding: 12px; border-left: 3px solid #4f46e5; margin: 15px 0;">
+    {{ comment.content }}
+  </div>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+  <p style="color: #999; font-size: 12px;">Ticketerr – system zarządzania zgłoszeniami</p>
+</body>
+</html>

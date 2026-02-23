@@ -10,6 +10,7 @@ use App\Enum\TicketStatus;
 use App\Repository\SlaPolicyRepository;
 use App\Repository\TicketRepository;
 use App\Service\AuditService;
+use App\Service\EmailService;
 use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use OpenApi\Attributes as OA;
@@ -27,6 +28,7 @@ class TicketController extends AbstractController
     public function __construct(
         private AuditService $audit,
         private NotificationService $notifications,
+        private EmailService $emailService,
         private SlaPolicyRepository $slaRepo,
         private SerializerInterface $serializer,
     ) {
@@ -343,9 +345,15 @@ class TicketController extends AbstractController
         }
         if (isset($changes['status'])) {
             $this->notifications->notifyTicketStatusChanged($ticket, $oldStatus, $user);
+            try {
+                $this->emailService->sendTicketStatusChanged($ticket);
+            } catch (\Throwable) {}
         }
         if (isset($changes['assignedTo']) && $ticket->getAssignedTo()) {
             $this->notifications->notifyTicketAssigned($ticket, $ticket->getAssignedTo(), $user);
+            try {
+                $this->emailService->sendTicketAssigned($ticket);
+            } catch (\Throwable) {}
         }
 
         $em->flush();

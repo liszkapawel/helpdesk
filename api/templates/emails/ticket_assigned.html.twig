@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"><title>Nowe przypisanie</title></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <h2 style="color: #4f46e5;">Przypisano Ci nowe zgłoszenie</h2>
+  <p>Zgłoszenie <strong>#{{ ticket.id }}: {{ ticket.title }}</strong> zostało Ci przypisane.</p>
+  <p>Priorytet: <strong>{{ ticket.priority.value }}</strong></p>
+  <p>Status: <strong>{{ ticket.status.value }}</strong></p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+  <p style="color: #999; font-size: 12px;">Ticketerr – system zarządzania zgłoszeniami</p>
+</body>
+</html>

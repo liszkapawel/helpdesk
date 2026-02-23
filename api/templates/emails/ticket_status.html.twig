@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"><title>Zmiana statusu zgłoszenia</title></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <h2 style="color: #4f46e5;">Status zgłoszenia #{{ ticket.id }} został zmieniony</h2>
+  <p>Zgłoszenie: <strong>{{ ticket.title }}</strong></p>
+  <p>Nowy status: <strong>{{ ticket.status.value }}</strong></p>
+  {% if ticket.assignedTo %}
+  <p>Przypisane do: {{ ticket.assignedTo.firstName }} {{ ticket.assignedTo.lastName }}</p>
+  {% endif %}
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+  <p style="color: #999; font-size: 12px;">Ticketerr – system zarządzania zgłoszeniami</p>
+</body>
+</html>

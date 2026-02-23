@@ -6,6 +6,7 @@ use App\Entity\Comment;
 use App\Entity\Ticket;
 use App\Entity\User;
 use App\Service\AuditService;
+use App\Service\EmailService;
 use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use OpenApi\Attributes as OA;
@@ -22,6 +23,7 @@ class CommentController extends AbstractController
     public function __construct(
         private AuditService $audit,
         private NotificationService $notifications,
+        private EmailService $emailService,
     ) {
     }
 
@@ -118,6 +120,9 @@ class CommentController extends AbstractController
             'author' => $user->getFirstName() . ' ' . $user->getLastName(),
         ], $user);
         $this->notifications->notifyTicketCommented($ticket, $user);
+        try {
+            $this->emailService->sendNewComment($ticket, $comment);
+        } catch (\Throwable) {}
         $em->flush();
 
         return $this->json(

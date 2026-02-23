@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Invite;
 use App\Entity\User;
 use App\Repository\InviteRepository;
+use App\Service\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -50,7 +51,7 @@ class InviteController extends AbstractController
             new OA\Response(response: 201, description: 'Zaproszenie utworzone'),
         ]
     )]
-    public function create(Request $request, EntityManagerInterface $em): JsonResponse
+    public function create(Request $request, EntityManagerInterface $em, EmailService $emailService): JsonResponse
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
@@ -68,6 +69,14 @@ class InviteController extends AbstractController
 
         $em->persist($invite);
         $em->flush();
+
+        if (!empty($data['email'])) {
+            try {
+                $emailService->sendInvite($invite, $data['email']);
+            } catch (\Throwable) {
+                // mail failure is non-fatal
+            }
+        }
 
         return $this->json($invite, 201, [], ['groups' => ['invite:read', 'organization:read', 'user:read']]);
     }
