@@ -126,6 +126,12 @@ const portalRoutes = [
     meta: { portal: true },
   },
   {
+    path: '/tickets/new',
+    name: 'portal-ticket-create',
+    component: () => import('@/views/TicketCreateView.vue'),
+    meta: { portal: true },
+  },
+  {
     path: '/tickets/:id',
     name: 'portal-ticket-detail',
     component: () => import('@/views/TicketDetailView.vue'),
