@@ -19,6 +19,7 @@
 
 ### E2E ###
 /e2e/node_modules/
+/e2e/test-results/
 
 ### Production ###
 .env.prod

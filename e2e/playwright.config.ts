@@ -7,7 +7,7 @@ export default defineConfig({
   retries: 0,
   timeout: 30000,
   use: {
-    baseURL: 'http://helpdesk.local',
+    baseURL: 'http://localhost',
     trace: 'on-first-retry',
   },
   projects: [

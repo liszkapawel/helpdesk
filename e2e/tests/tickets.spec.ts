@@ -6,9 +6,9 @@ test.describe('Tickets', () => {
     await loginAs(page, TEST_USER.email, TEST_USER.password)
 
     await page.goto('/tickets/new')
-    await page.getByLabel('Tytuł').fill('E2E test ticket')
-    await page.getByLabel('Opis').fill('Ticket created by Playwright test')
-    await page.getByRole('button', { name: 'Utwórz zgłoszenie' }).click()
+    await page.getByPlaceholder('Krótki opis problemu').fill('E2E test ticket')
+    await page.getByPlaceholder('Opisz problem szczegółowo...').fill('Ticket created by Playwright test')
+    await page.getByRole('button', { name: 'Utwórz ticket' }).click()
 
     await expect(page.getByText('E2E test ticket')).toBeVisible()
   })
@@ -57,7 +57,7 @@ test.describe('Tickets', () => {
 
     const commentText = 'Playwright comment ' + Date.now()
     await page.getByPlaceholder('Napisz komentarz...').fill(commentText)
-    await page.getByRole('button', { name: 'Wyślij' }).click()
+    await page.getByRole('button', { name: 'Wyślij', exact: true }).click()
 
     await expect(page.getByText(commentText)).toBeVisible()
   })
