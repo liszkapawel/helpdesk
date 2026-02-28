@@ -14,7 +14,7 @@ async function loadFaq() {
   loading.value = true
   try {
     const slug = getOrgSlug()
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+    const baseUrl = import.meta.env.VITE_API_URL || window.location.origin
     const { data } = await axios.get(`${baseUrl}/api/public/org/${slug}/faq`)
     articles.value = data
   } finally {
